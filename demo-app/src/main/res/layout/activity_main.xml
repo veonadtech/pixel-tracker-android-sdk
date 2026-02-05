@@ -33,7 +33,7 @@
         android:clickable="true"
         android:focusable="true"
         android:background="?attr/selectableItemBackground"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="12dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/titleTextView" />
@@ -44,34 +44,75 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#FFFFFF"
-        android:elevation="4dp"
-        android:padding="8dp"
+        android:elevation="2dp"
+        android:padding="12dp"
+        android:layout_marginBottom="12dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/descriptionTextView">
 
-        <!-- Кнопка Show Stats -->
-        <Button
-            android:id="@+id/statsButton"
+        <!-- Текст "Refresh time:" слева -->
+        <TextView
+            android:id="@+id/labelRefreshTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Show Stats"
-            android:backgroundTint="#2196F3"
+            android:text="Refresh time:"
+            android:textSize="16sp"
+            android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
 
-        <!-- Статус пикселя -->
+        <!-- Управление refresh time -->
+        <LinearLayout
+            android:id="@+id/refreshTimeLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginStart="12dp"
+            app:layout_constraintStart_toEndOf="@id/labelRefreshTime"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent">
+
+            <Button
+                android:id="@+id/btnDecreaseRefresh"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:text="-"
+                android:textSize="20sp"
+                android:backgroundTint="#4CAF50" />
+
+            <TextView
+                android:id="@+id/tvRefreshTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="5s"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:padding="3dp"
+                android:layout_marginHorizontal="12dp" />
+
+            <Button
+                android:id="@+id/btnIncreaseRefresh"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:text="+"
+                android:textSize="20sp"
+                android:backgroundTint="#4CAF50" />
+        </LinearLayout>
+
+        <!-- Статус пикселя (справа) -->
         <TextView
             android:id="@+id/pixelStatusText"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pixel Status: Not Tracking"
+            android:text=""
             android:textSize="16sp"
             android:textStyle="bold"
+            android:gravity="center"
             android:padding="8dp"
             android:layout_marginStart="16dp"
-            app:layout_constraintStart_toEndOf="@id/statsButton"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent" />
@@ -90,11 +131,27 @@
         android:textStyle="bold"
         android:padding="12dp"
         android:background="#E8F5E8"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="12dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toBottomOf="@id/fixedTopPanel" />
+
+    <!-- Подсказка о времени до следующего refresh -->
+    <TextView
+        android:id="@+id/hintTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Scroll down to find the red pixel"
+        android:textSize="16sp"
+        android:textAlignment="center"
+        android:textColor="#2196F3"
+        android:textStyle="bold"
+        android:padding="8dp"
+        android:background="#E3F2FD"
+        android:layout_marginBottom="12dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/showCountText" />
 
     <!-- Скроллируемая область -->
     <androidx.core.widget.NestedScrollView
@@ -104,12 +161,26 @@
         android:fillViewport="true"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/showCountText"
+        app:layout_constraintTop_toBottomOf="@id/hintTextView"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
+
+            <!-- Информационный текст -->
+            <TextView
+                android:id="@+id/instructionText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Scroll down 1.5 screens to see the red pixel"
+                android:textSize="14sp"
+                android:textAlignment="center"
+                android:textColor="#666666"
+                android:padding="8dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <!-- Контейнер для картинок -->
             <FrameLayout
@@ -117,11 +188,11 @@
                 android:layout_width="match_parent"
                 android:layout_height="3000dp"
                 android:background="#F5F5F5"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="8dp"
                 android:layout_marginBottom="16dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toBottomOf="@id/instructionText" />
 
             <!-- Текст внизу контейнера -->
             <TextView

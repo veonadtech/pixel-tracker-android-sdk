@@ -7,8 +7,13 @@ import android.util.Log
 import android.view.View
 import androidx.annotation.Keep
 import androidx.core.view.isVisible
-import kotlinx.coroutines.*
-import java.util.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.max
 
 @Keep
@@ -23,6 +28,10 @@ class PixelTracker @JvmOverloads constructor(
     var visibilityThreshold: Int = 1
     var isDebugMode: Boolean = false
     var checkInterval: Long = 500L // Интервал автоматической проверки
+    var refreshTime: Long = 10000L // Время в миллисекундах для повторного засчитывания показа (по умолчанию 10 секунд)
+        set(value) {
+            field = max(1000L, value) // Минимум 1 секунда
+        }
 
     // Приватные свойства
     private val tag: String = "PixelTracker"
@@ -30,13 +39,18 @@ class PixelTracker @JvmOverloads constructor(
     private var visibilityCount = 0
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var checkJob: Job? = null
+    private var refreshTimerJob: Job? = null
     private var isTracking = false
+    private var continuousVisibilityStartTime: Long = 0
+    private var nextRefreshTime: Long = 0
+    private var isContinuousTracking = false
 
     // Интерфейс логирования
     interface PixelLogger {
         fun logAppearance(pixelId: String, timestamp: String, metadata: Map<String, Any>)
         fun logDisappearance(pixelId: String, timestamp: String, metadata: Map<String, Any>)
         fun logError(pixelId: String, error: String, timestamp: String)
+        fun logRefresh(pixelId: String, timestamp: String, metadata: Map<String, Any>)
     }
 
     private var logger: PixelLogger = DefaultPixelLogger()
@@ -52,6 +66,10 @@ class PixelTracker @JvmOverloads constructor(
 
         override fun logError(pixelId: String, error: String, timestamp: String) {
             Log.e("PixelTracker", "❌ Pixel $pixelId error: $error at $timestamp")
+        }
+
+        override fun logRefresh(pixelId: String, timestamp: String, metadata: Map<String, Any>) {
+            Log.d("PixelTracker", "🔄 Pixel refresh counted: $pixelId at $timestamp")
         }
     }
 
@@ -75,6 +93,9 @@ class PixelTracker @JvmOverloads constructor(
         if (isTracking) return
 
         isTracking = true
+        isContinuousTracking = false
+        continuousVisibilityStartTime = 0
+        nextRefreshTime = 0
 
         // Запускаем периодическую проверку
         startPeriodicCheck()
@@ -83,7 +104,7 @@ class PixelTracker @JvmOverloads constructor(
         post { checkVisibility() }
 
         if (isDebugMode) {
-            Log.d(tag, "Starting pixel tracking with ID: $pixelId")
+            Log.d(tag, "Starting pixel tracking with ID: $pixelId, refreshTime: ${refreshTime}ms")
         }
     }
 
@@ -95,9 +116,13 @@ class PixelTracker @JvmOverloads constructor(
 
         isTracking = false
         wasVisible = false
+        isContinuousTracking = false
+        continuousVisibilityStartTime = 0
+        nextRefreshTime = 0
 
-        // Останавливаем периодическую проверку
+        // Останавливаем периодическую проверку и таймер
         stopPeriodicCheck()
+        stopRefreshTimer()
 
         if (isDebugMode) {
             Log.d(tag, "Stopping pixel tracking with ID: $pixelId")
@@ -128,23 +153,98 @@ class PixelTracker @JvmOverloads constructor(
     }
 
     /**
+     * Запускает таймер для отслеживания времени показа
+     */
+    private fun startRefreshTimer() {
+        refreshTimerJob?.cancel()
+        refreshTimerJob = coroutineScope.launch {
+            val currentTime = System.currentTimeMillis()
+            val timeUntilRefresh = nextRefreshTime - currentTime
+
+            if (timeUntilRefresh > 0) {
+                delay(timeUntilRefresh)
+            }
+
+            // Таймер сработал - засчитываем повторный показ
+            if (isContinuousTracking && isActuallyVisible() && isTracking) {
+                visibilityCount++
+                continuousVisibilityStartTime = System.currentTimeMillis()
+                nextRefreshTime = continuousVisibilityStartTime + refreshTime
+
+                logger.logRefresh(pixelId, getTimestamp(), getRefreshMetadata())
+
+                if (isDebugMode) {
+                    Log.d(tag, "🔄 Refresh counted for pixel: $pixelId, total: $visibilityCount")
+                }
+
+                // Перезапускаем таймер для следующего интервала
+                startRefreshTimer()
+            }
+        }
+    }
+
+    /**
+     * Останавливает таймер
+     */
+    private fun stopRefreshTimer() {
+        refreshTimerJob?.cancel()
+        refreshTimerJob = null
+    }
+
+    /**
      * Проверяет видимость пикселя
      */
     private fun checkVisibility() {
         val isVisibleNow = isActuallyVisible()
 
         if (isVisibleNow && !wasVisible) {
-            // Пиксель стал видимым
+            // Пиксель стал видимым - засчитываем первый показ
             visibilityCount++
             wasVisible = true
+            isContinuousTracking = true
+            continuousVisibilityStartTime = System.currentTimeMillis()
+            nextRefreshTime = continuousVisibilityStartTime + refreshTime
 
             logger.logAppearance(pixelId, getTimestamp(), getVisibilityMetadata(true))
 
+            if (isDebugMode) {
+                Log.d(tag, "🎯 First appearance counted for pixel: $pixelId, total: $visibilityCount")
+            }
+
+            // Запускаем таймер для следующего показа
+            startRefreshTimer()
+
         } else if (!isVisibleNow && wasVisible) {
-            // Пиксель стал невидимым
+            // Пиксель стал невидимым - сбрасываем непрерывный трекинг
             wasVisible = false
+            isContinuousTracking = false
+            continuousVisibilityStartTime = 0
+            nextRefreshTime = 0
 
             logger.logDisappearance(pixelId, getTimestamp(), getVisibilityMetadata(false))
+
+            if (isDebugMode) {
+                Log.d(tag, "👻 Pixel disappeared: $pixelId, continuous tracking stopped")
+            }
+
+            // Останавливаем таймер
+            stopRefreshTimer()
+
+        } else if (isVisibleNow && wasVisible && isContinuousTracking) {
+            // Пиксель продолжает быть видимым
+            // Проверяем, не настало ли время для следующего показа
+            val currentTime = System.currentTimeMillis()
+            if (currentTime >= nextRefreshTime) {
+                visibilityCount++
+                continuousVisibilityStartTime = currentTime
+                nextRefreshTime = continuousVisibilityStartTime + refreshTime
+
+                logger.logRefresh(pixelId, getTimestamp(), getRefreshMetadata())
+
+                if (isDebugMode) {
+                    Log.d(tag, "🔄 Refresh counted for pixel: $pixelId, total: $visibilityCount")
+                }
+            }
         }
     }
 
@@ -194,6 +294,14 @@ class PixelTracker @JvmOverloads constructor(
         return mapOf(
             "visible" to isVisible,
             "total_appearances" to visibilityCount,
+            "refresh_time" to refreshTime,
+            "is_continuous_tracking" to isContinuousTracking,
+            "continuous_time" to if (continuousVisibilityStartTime > 0)
+                System.currentTimeMillis() - continuousVisibilityStartTime
+            else 0,
+            "next_refresh_in" to if (nextRefreshTime > 0)
+                nextRefreshTime - System.currentTimeMillis()
+            else 0,
             "dimensions" to "${width}x${height}",
             "position" to "[${location[0]}, ${location[1]}]",
             "visible_rect" to if (hasVisibleRect)
@@ -204,6 +312,21 @@ class PixelTracker @JvmOverloads constructor(
             "is_visible" to this.isVisible,
             "has_window_focus" to hasWindowFocus(),
             "is_attached" to isAttachedToWindow,
+            "timestamp" to System.currentTimeMillis()
+        )
+    }
+
+    /**
+     * Получает метаданные для refresh события
+     */
+    private fun getRefreshMetadata(): Map<String, Any> {
+        return mapOf(
+            "total_appearances" to visibilityCount,
+            "refresh_time" to refreshTime,
+            "continuous_time" to if (continuousVisibilityStartTime > 0)
+                System.currentTimeMillis() - continuousVisibilityStartTime
+            else 0,
+            "next_refresh_in" to refreshTime, // Следующий refresh через полный интервал
             "timestamp" to System.currentTimeMillis()
         )
     }
@@ -223,7 +346,15 @@ class PixelTracker @JvmOverloads constructor(
         "totalAppearances" to visibilityCount,
         "isCurrentlyVisible" to isActuallyVisible(),
         "isTracking" to isTracking,
-        "checkInterval" to checkInterval
+        "checkInterval" to checkInterval,
+        "refreshTime" to refreshTime,
+        "isContinuousTracking" to isContinuousTracking,
+        "continuousVisibilityTime" to if (continuousVisibilityStartTime > 0)
+            System.currentTimeMillis() - continuousVisibilityStartTime
+        else 0,
+        "nextRefreshIn" to if (nextRefreshTime > 0)
+            nextRefreshTime - System.currentTimeMillis()
+        else 0
     )
 
     /**
@@ -231,6 +362,20 @@ class PixelTracker @JvmOverloads constructor(
      */
     fun checkVisibilityNow() {
         checkVisibility()
+    }
+
+    /**
+     * Сбрасывает счетчик показов
+     */
+    fun resetCount() {
+        visibilityCount = 0
+        continuousVisibilityStartTime = 0
+        nextRefreshTime = 0
+        isContinuousTracking = false
+
+        if (isDebugMode) {
+            Log.d(tag, "Counter reset for pixel: $pixelId")
+        }
     }
 
     private fun getTimestamp(): String {
@@ -263,9 +408,12 @@ class PixelTracker @JvmOverloads constructor(
         @JvmStatic
         fun create(
             context: Context,
-            pixelId: String
+            pixelId: String,
+            refreshTimeSeconds: Long = 10L
         ): PixelTracker {
-            return PixelTracker(context, pixelId)
+            return PixelTracker(context, pixelId).apply {
+                this.refreshTime = refreshTimeSeconds * 1000 // Конвертируем секунды в миллисекунды
+            }
         }
 
         /**
