@@ -54,20 +54,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateDescriptionText() {
+        val refreshInfo = if (refreshTimeSeconds > 0) {
+            "2. Keep pixel on screen for $refreshTimeSeconds seconds to count another view"
+        } else {
+            "2. Refresh disabled - pixel counts only on appearance"
+        }
+
         binding.descriptionTextView.text = """
             How it works:
             1. Scroll down 1.5 screens to see the red pixel
-            2. Keep pixel on screen for $refreshTimeSeconds seconds to count another view
+            $refreshInfo
             3. Scroll up to hide pixel, then down again to restart counting
-            
-            Logcat tag: "PixelTrackerDemo"
         """.trimIndent()
     }
 
     private fun setupRefreshControl() {
         // Кнопка уменьшения времени refresh
         binding.btnDecreaseRefresh.setOnClickListener {
-            if (refreshTimeSeconds > 1) {
+            if (refreshTimeSeconds > 0) { // Не позволяем уменьшить меньше 0
                 refreshTimeSeconds--
                 updateRefreshTimeText()
                 updateDescriptionText()
@@ -85,13 +89,24 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateRefreshTimeText() {
-        binding.tvRefreshTime.text = "${refreshTimeSeconds}s"
+        // Показываем "Off" если refreshTime = 0
+        val displayText = if (refreshTimeSeconds == 0L) "Off" else "${refreshTimeSeconds}s"
+        binding.tvRefreshTime.text = displayText
+
+        // Меняем цвет кнопки уменьшения, если достигли минимума
+        if (refreshTimeSeconds == 0L) {
+            binding.btnDecreaseRefresh.setBackgroundColor(Color.parseColor("#CCCCCC"))
+            binding.btnDecreaseRefresh.isEnabled = false
+        } else {
+            binding.btnDecreaseRefresh.setBackgroundColor(Color.parseColor("#4CAF50"))
+            binding.btnDecreaseRefresh.isEnabled = true
+        }
     }
 
     private fun updatePixelTrackerRefreshTime() {
         if (::pixelTracker.isInitialized) {
             pixelTracker.refreshTime = TimeUnit.SECONDS.toMillis(refreshTimeSeconds)
-            Log.d("PixelTrackerDemo", "Refresh time updated to ${refreshTimeSeconds}s")
+            Log.d("PixelTrackerDemo", "Refresh time updated to ${refreshTimeSeconds}s (${pixelTracker.refreshTime}ms)")
         }
     }
 
@@ -113,9 +128,15 @@ class MainActivity : AppCompatActivity() {
                     metadata: Map<String, Any>
                 ) {
                     runOnUiThread {
+                        val message = if (refreshTimeSeconds > 0) {
+                            "🎯 Pixel is visible (refresh every ${refreshTimeSeconds}s)"
+                        } else {
+                            "🎯 Pixel is visible"
+                        }
+
                         Toast.makeText(
                             this@MainActivity,
-                            "🎯 Pixel is visible",
+                            message,
                             Toast.LENGTH_SHORT
                         ).show()
 
@@ -154,7 +175,7 @@ class MainActivity : AppCompatActivity() {
                     runOnUiThread {
                         Toast.makeText(
                             this@MainActivity,
-                            "🔄 New view counted",
+                            "🔄 New view counted (refresh)",
                             Toast.LENGTH_SHORT
                         ).show()
 
@@ -177,8 +198,7 @@ class MainActivity : AppCompatActivity() {
             // Размещаем пиксель на 1.5 экрана ниже первой картинки
             val screenHeight = resources.displayMetrics.heightPixels
             topMargin = (screenHeight * 1.5).toInt()
-            leftMargin =
-                resources.displayMetrics.widthPixels / 2 - pixelSize// Центрируем по горизонтали
+            leftMargin = resources.displayMetrics.widthPixels / 2 - pixelSize // Центрируем по горизонтали
             gravity = android.view.Gravity.TOP or android.view.Gravity.START
         }
         pixelTracker.setBackgroundColor(Color.RED)
@@ -241,16 +261,19 @@ class MainActivity : AppCompatActivity() {
             val appearances = stats["totalAppearances"] as? Int ?: 0
             val nextRefreshIn = stats["nextRefreshIn"] as? Long ?: 0
             val isVisible = stats["isCurrentlyVisible"] as? Boolean ?: false
+            val refreshEnabled = stats["refreshEnabled"] as? Boolean ?: false
 
             // Обновляем основной счетчик
             binding.showCountText.text = "Total Appearances: $appearances"
 
-            // Показываем время до следующего показа, если пиксель виден
-            if (isVisible && nextRefreshIn > 0) {
+            // Показываем время до следующего показа, если пиксель виден и refresh включен
+            if (isVisible && refreshEnabled && nextRefreshIn > 0) {
                 val secondsToNext = nextRefreshIn / 1000
-                binding.hintTextView.text = "Next view every: ${secondsToNext + 1}s"
+                binding.hintTextView.text = "Next view in: ${secondsToNext}s"
+            } else if (refreshEnabled) {
+                binding.hintTextView.text = "Refresh: ${refreshTimeSeconds}s"
             } else {
-                binding.hintTextView.text = "Scroll down to find the red pixel"
+                binding.hintTextView.text = "Refresh: Off"
             }
         }
     }
