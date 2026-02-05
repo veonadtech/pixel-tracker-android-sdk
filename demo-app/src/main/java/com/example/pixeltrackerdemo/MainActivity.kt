@@ -17,7 +17,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var pixelTracker: PixelTracker
     private var isDescriptionExpanded = false
     private var refreshTimeSeconds: Long = 5L // По умолчанию 5 секунд
-    private val pixelSize: Int = 40
+    private val debugPixelSize: Int = 40 // Размер пикселя в debug режиме
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,11 +60,14 @@ class MainActivity : AppCompatActivity() {
             "2. Refresh disabled - pixel counts only on appearance"
         }
 
+        val sizeInfo = "Pixel size: ${debugPixelSize}x${debugPixelSize}px (debug mode)"
+
         binding.descriptionTextView.text = """
             How it works:
             1. Scroll down 1.5 screens to see the red pixel
             $refreshInfo
             3. Scroll up to hide pixel, then down again to restart counting
+            $sizeInfo
         """.trimIndent()
     }
 
@@ -115,9 +118,10 @@ class MainActivity : AppCompatActivity() {
         pixelTracker = PixelTracker.create(
             context = this,
             pixelId = "demo_pixel_${System.currentTimeMillis()}",
-            refreshTimeSeconds = refreshTimeSeconds
+            refreshTimeSeconds = refreshTimeSeconds,
+            pixelSize = debugPixelSize
         ).apply {
-            isDebugMode = true
+            isDebugMode = true // Включаем debug режим для видимого пикселя
             visibilityThreshold = 1
 
             // Кастомный логгер для демо
@@ -194,11 +198,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Добавляем пиксель в контейнер
-        val layoutParams = android.widget.FrameLayout.LayoutParams(pixelSize, pixelSize).apply {
+        val layoutParams = android.widget.FrameLayout.LayoutParams(
+            debugPixelSize,
+            debugPixelSize
+        ).apply {
             // Размещаем пиксель на 1.5 экрана ниже первой картинки
             val screenHeight = resources.displayMetrics.heightPixels
             topMargin = (screenHeight * 1.5).toInt()
-            leftMargin = resources.displayMetrics.widthPixels / 2 - pixelSize // Центрируем по горизонтали
+            leftMargin = resources.displayMetrics.widthPixels / 2 - debugPixelSize / 2 // Центрируем по горизонтали
             gravity = android.view.Gravity.TOP or android.view.Gravity.START
         }
         pixelTracker.setBackgroundColor(Color.RED)
@@ -212,6 +219,9 @@ class MainActivity : AppCompatActivity() {
 
         // Устанавливаем начальную подсказку
         binding.hintTextView.text = "Scroll down to find the red pixel"
+
+        // Показываем размер пикселя в логах
+        Log.d("PixelTrackerDemo", "Pixel size: ${debugPixelSize}x${debugPixelSize}px")
     }
 
     private fun setupImages() {

@@ -32,6 +32,10 @@ class PixelTracker @JvmOverloads constructor(
         set(value) {
             field = max(0L, value) // Минимум 0
         }
+    var pixelSize: Int = 1 // Размер пикселя по умолчанию 1x1
+        set(value) {
+            field = max(1, value) // Минимум 1
+        }
 
     // Приватные свойства
     private val tag: String = "PixelTracker"
@@ -104,7 +108,7 @@ class PixelTracker @JvmOverloads constructor(
         post { checkVisibility() }
 
         if (isDebugMode) {
-            Log.d(tag, "Starting pixel tracking with ID: $pixelId, refreshTime: ${refreshTime}ms")
+            Log.d(tag, "Starting pixel tracking with ID: $pixelId, refreshTime: ${refreshTime}ms, size: ${pixelSize}x$pixelSize")
         }
     }
 
@@ -360,6 +364,8 @@ class PixelTracker @JvmOverloads constructor(
         "checkInterval" to checkInterval,
         "refreshTime" to refreshTime,
         "refreshEnabled" to (refreshTime > 0),
+        "pixelSize" to pixelSize,
+        "isDebugMode" to isDebugMode,
         "isContinuousTracking" to isContinuousTracking,
         "continuousVisibilityTime" to if (continuousVisibilityStartTime > 0)
             System.currentTimeMillis() - continuousVisibilityStartTime
@@ -395,8 +401,9 @@ class PixelTracker @JvmOverloads constructor(
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        // Фиксированный размер
-        setMeasuredDimension(40, 40)
+        // Размер зависит от режима отладки
+        val size = if (isDebugMode) pixelSize else 1
+        setMeasuredDimension(size, size)
     }
 
     override fun onAttachedToWindow() {
@@ -421,10 +428,12 @@ class PixelTracker @JvmOverloads constructor(
         fun create(
             context: Context,
             pixelId: String,
-            refreshTimeSeconds: Long = 0L // По умолчанию 0 - считать только при появлении
+            refreshTimeSeconds: Long = 0L, // По умолчанию 0 - считать только при появлении
+            pixelSize: Int = 1 // По умолчанию 1x1
         ): PixelTracker {
             return PixelTracker(context, pixelId).apply {
                 this.refreshTime = refreshTimeSeconds * 1000 // Конвертируем секунды в миллисекунды
+                this.pixelSize = pixelSize
             }
         }
 
