@@ -2,6 +2,7 @@ package com.example.pixeltrackerdemo
 
 import android.graphics.Color
 import android.os.Bundle
+import android.text.TextUtils
 import android.util.Log
 import android.widget.ImageView
 import android.widget.Toast
@@ -14,7 +15,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var pixelTracker: PixelTracker
-    private var scrollCounter = 0
+    private var totalAppearances = 0
+    private var isDescriptionExpanded = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,7 +26,6 @@ class MainActivity : AppCompatActivity() {
         setupUI()
         setupPixelTracker()
         setupImages()
-        setupScrollListener()
     }
 
     private fun setupUI() {
@@ -38,15 +39,43 @@ class MainActivity : AppCompatActivity() {
             Check Logcat with tag "PixelTrackerDemo" for events
         """.trimIndent()
 
-        binding.scrollCounterText.text = "Scrolls: $scrollCounter"
+        // Сворачиваемое/разворачиваемое описание
+        binding.descriptionTextView.setOnClickListener {
+            isDescriptionExpanded = !isDescriptionExpanded
+
+            if (isDescriptionExpanded) {
+                // Разворачиваем
+                binding.descriptionTextView.maxLines = Integer.MAX_VALUE
+                binding.descriptionTextView.ellipsize = null
+            } else {
+                // Сворачиваем
+                binding.descriptionTextView.maxLines = 3
+                binding.descriptionTextView.ellipsize = TextUtils.TruncateAt.END
+            }
+        }
+        updateShowCount()
 
         // Кнопка показа статистики
         binding.statsButton.setOnClickListener {
             val stats = pixelTracker.getStats()
-            val statsText = stats.entries.joinToString("\n") { "${it.key}: ${it.value}" }
+            val appearances = stats["totalAppearances"] as? Int ?: 0
+            val isVisible = stats["isCurrentlyVisible"] as? Boolean ?: false
 
-            binding.statsTextView.text = "Current Stats:\n$statsText"
-            binding.statsTextView.visibility = android.view.View.VISIBLE
+            val statsText = """
+                Total Appearances: $appearances
+                Currently Visible: ${if (isVisible) "Yes" else "No"}
+                Pixel ID: ${stats["pixelId"]}
+                Library Version: ${if (stats.containsKey("libraryVersion")) stats["libraryVersion"] else "unknown"}
+            """.trimIndent()
+
+            Toast.makeText(
+                this,
+                statsText,
+                Toast.LENGTH_LONG
+            ).show()
+
+            // Краткая информация в статусе
+            binding.pixelStatusText.text = "Stats: $appearances appearances"
         }
     }
 
@@ -56,28 +85,28 @@ class MainActivity : AppCompatActivity() {
             context = this,
             pixelId = "demo_pixel_${System.currentTimeMillis()}"
         ).apply {
-           // debounceTime = 200L
-            visibilityThreshold = 1
             isDebugMode = true
+            visibilityThreshold = 1
 
             // Кастомный логгер для демо
             setCustomLogger(object : PixelTracker.PixelLogger {
                 override fun logAppearance(pixelId: String, timestamp: String, metadata: Map<String, Any>) {
                     Log.d("PixelTrackerDemo", "🎯 Pixel APPEARED! ID: $pixelId")
 
+                    totalAppearances++
+
                     runOnUiThread {
                         Toast.makeText(
                             this@MainActivity,
-                            "🎯 Pixel is VISIBLE!\nTotal appearances: ${metadata["total_appearances"]}",
+                            "🎯 Pixel is VISIBLE!\nTotal appearances: $totalAppearances",
                             Toast.LENGTH_SHORT
                         ).show()
 
                         binding.pixelStatusText.text = "✅ PIXEL VISIBLE"
                         binding.pixelStatusText.setTextColor(getColor(android.R.color.holo_green_dark))
 
-                        // Показать позицию пикселя
-                        val position = metadata["position"] as? String ?: "[?,?]"
-                        binding.pixelPositionText.text = "Position: $position"
+                        // Обновляем счетчик показов
+                        updateShowCount()
                     }
                 }
 
@@ -97,25 +126,21 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Добавляем пиксель в контейнер
-        // Размещаем пиксель после первой картинки, но перед второй
-        // Это создаст эффект: пиксель появляется между двумя картинками
         val layoutParams = android.widget.FrameLayout.LayoutParams(40, 40).apply {
             // Размещаем пиксель на 1.5 экрана ниже первой картинки
-            // Screen height * 1.5 = нужно проскроллить 1.5 экрана
             val screenHeight = resources.displayMetrics.heightPixels
             topMargin = (screenHeight * 1.5).toInt()
-            leftMargin = resources.displayMetrics.widthPixels / 2
+            leftMargin = resources.displayMetrics.widthPixels / 2 - 20 // Центрируем по горизонтали
             gravity = android.view.Gravity.TOP or android.view.Gravity.START
         }
         pixelTracker.setBackgroundColor(Color.RED)
-      //  pixelTracker.visibility = android.view.View.VISIBLE
         binding.imagesContainer.addView(pixelTracker, layoutParams)
 
         // Запускаем отслеживание
         pixelTracker.startTracking()
 
-        binding.pixelStatusText.text = "🟡 PIXEL TRACKING STARTED"
-        binding.pixelPositionText.text = "Waiting for pixel visibility..."
+        binding.pixelStatusText.text = "🟡 TRACKING STARTED"
+        binding.pixelStatusText.setTextColor(getColor(android.R.color.holo_orange_dark))
     }
 
     private fun setupImages() {
@@ -152,66 +177,44 @@ class MainActivity : AppCompatActivity() {
         binding.imagesContainer.addView(secondImage)
 
         // Устанавливаем высоту контейнера, чтобы можно было скроллить
-        // 3 экрана высоты: 1 экран + 0.5 отступа + 1.5 для второй картинки
         val containerHeight = resources.displayMetrics.heightPixels * 3
         binding.imagesContainer.layoutParams.height = containerHeight
 
-        binding.totalHeightText.text = "Total scroll height: ${containerHeight}px"
+        binding.bottomText.text = "Pixel location: ${(resources.displayMetrics.heightPixels * 1.5).toInt()}px from top"
     }
 
-    private fun setupScrollListener() {
-        binding.mainScrollView.setOnScrollChangeListener(
-            NestedScrollView.OnScrollChangeListener { v, scrollX, scrollY, oldScrollX, oldScrollY ->
-                // Считаем скроллы
-                if (scrollY > oldScrollY) {
-                    scrollCounter++
-                    binding.scrollCounterText.text = "Scrolls down: $scrollCounter"
 
-                    // Подсказки при приближении к пикселю
-                    val screenHeight = resources.displayMetrics.heightPixels
-                    val pixelPosition = (screenHeight * 1.5).toInt()
+    private fun updateShowCount() {
+        binding.showCountText.text = "Total Appearances: $totalAppearances"
+    }
 
-                    if (scrollY > pixelPosition - screenHeight && scrollY < pixelPosition) {
-                        binding.hintTextView.text = "⏬ Almost at the pixel! Keep scrolling!"
-                        binding.hintTextView.visibility = android.view.View.VISIBLE
-                    } else if (scrollY >= pixelPosition && scrollY < pixelPosition + 100) {
-                        binding.hintTextView.text = "🎯 You should see the pixel NOW!"
-                    } else if (scrollY > pixelPosition + 100) {
-                        binding.hintTextView.text = "⬆️ Scroll up to see pixel again"
-                    }
-                } else if (scrollY < oldScrollY) {
-                    binding.hintTextView.text = "Scrolling up..."
-                }
-
-                // Показываем текущую позицию скролла
-                binding.currentScrollText.text = "Scroll position: ${scrollY}px"
-
-                // Показываем процент скролла до пикселя
-                val screenHeight = resources.displayMetrics.heightPixels
-                val pixelPosition = (screenHeight * 1.5).toInt()
-                if (scrollY < pixelPosition) {
-                    val progress = (scrollY.toFloat() / pixelPosition * 100).toInt()
-                    binding.progressText.text = "Progress to pixel: $progress%"
-                } else {
-                    val progress = ((scrollY - pixelPosition).toFloat() / screenHeight * 100).toInt()
-                    binding.progressText.text = "Past pixel by: $progress% of screen"
-                }
-            }
-        )
+    private fun hasImageResource(resourceId: Int): Boolean {
+        return try {
+            resources.getDrawable(resourceId, null)
+            true
+        } catch (e: Exception) {
+            false
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        pixelTracker.startTracking()
+        if (::pixelTracker.isInitialized) {
+            pixelTracker.startTracking()
+        }
     }
 
     override fun onPause() {
         super.onPause()
-        pixelTracker.stopTracking()
+        if (::pixelTracker.isInitialized) {
+            pixelTracker.stopTracking()
+        }
     }
 
     override fun onDestroy() {
-        pixelTracker.stopTracking()
+        if (::pixelTracker.isInitialized) {
+            pixelTracker.stopTracking()
+        }
         super.onDestroy()
     }
 }
