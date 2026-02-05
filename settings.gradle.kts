@@ -9,6 +9,7 @@ pluginManagement {
         }
         mavenCentral()
         gradlePluginPortal()
+        maven { url = uri("https://jitpack.io") }
     }
 }
 dependencyResolutionManagement {
@@ -20,5 +21,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "pixel-tracker-android-sdk"
-include(":app")
- 
+include(":demo-app")
+include(":pixel-tracker")

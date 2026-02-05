@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="PixelTracker">
+        <attr name="pixelId" format="string" />
+        <attr name="logTag" format="string" />
+        <attr name="debounceTime" format="integer" />
+        <attr name="visibilityThreshold" format="integer" />
+        <attr name="isDebugMode" format="boolean" />
+    </declare-styleable>
+</resources>
