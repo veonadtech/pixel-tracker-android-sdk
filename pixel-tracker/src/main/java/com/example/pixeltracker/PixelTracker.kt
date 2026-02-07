@@ -49,6 +49,15 @@ class PixelTracker @JvmOverloads constructor(
     private var nextRefreshTime: Long = 0
     private var isContinuousTracking = false
 
+    // Получение версии библиотеки
+    private val libraryVersion: String by lazy {
+        try {
+            BuildConfig.LIBRARY_VERSION
+        } catch (e: Exception) {
+            "unknown"
+        }
+    }
+
     // Интерфейс логирования
     interface PixelLogger {
         fun logAppearance(pixelId: String, timestamp: String, metadata: Map<String, Any>)
@@ -59,26 +68,27 @@ class PixelTracker @JvmOverloads constructor(
 
     private var logger: PixelLogger = DefaultPixelLogger()
 
-    private class DefaultPixelLogger : PixelLogger {
+    private inner class DefaultPixelLogger : PixelLogger {
         override fun logAppearance(pixelId: String, timestamp: String, metadata: Map<String, Any>) {
-            Log.d("PixelTracker", "🔵 Pixel appeared: $pixelId at $timestamp")
+            Log.d("PixelTracker", "[$libraryVersion] 🔵 Pixel appeared: $pixelId at $timestamp")
         }
 
         override fun logDisappearance(pixelId: String, timestamp: String, metadata: Map<String, Any>) {
-            Log.d("PixelTracker", "🔴 Pixel disappeared: $pixelId at $timestamp")
+            Log.d("PixelTracker", "[$libraryVersion] 🔴 Pixel disappeared: $pixelId at $timestamp")
         }
 
         override fun logError(pixelId: String, error: String, timestamp: String) {
-            Log.e("PixelTracker", "❌ Pixel $pixelId error: $error at $timestamp")
+            Log.e("PixelTracker", "[$libraryVersion] ❌ Pixel $pixelId error: $error at $timestamp")
         }
 
         override fun logRefresh(pixelId: String, timestamp: String, metadata: Map<String, Any>) {
-            Log.d("PixelTracker", "🔄 Pixel refresh counted: $pixelId at $timestamp")
+            Log.d("PixelTracker", "[$libraryVersion] 🔄 Pixel refresh counted: $pixelId at $timestamp")
         }
     }
 
     init {
         setupView()
+        logInitialization()
     }
 
     private fun setupView() {
@@ -88,6 +98,13 @@ class PixelTracker @JvmOverloads constructor(
         isClickable = false
         isFocusable = false
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
+    }
+
+    /**
+     * Логирование инициализации класса
+     */
+    private fun logInitialization() {
+        Log.d(tag, "[$libraryVersion] PixelTracker initialized - Pixel ID: $pixelId, Size: ${pixelSize}x$pixelSize, Refresh: ${refreshTime}ms")
     }
 
     /**
@@ -108,7 +125,7 @@ class PixelTracker @JvmOverloads constructor(
         post { checkVisibility() }
 
         if (isDebugMode) {
-            Log.d(tag, "Starting pixel tracking with ID: $pixelId, refreshTime: ${refreshTime}ms, size: ${pixelSize}x$pixelSize")
+            Log.d(tag, "[$libraryVersion] Starting pixel tracking - ID: $pixelId, Refresh: ${refreshTime}ms, Size: ${pixelSize}x$pixelSize, Interval: ${checkInterval}ms")
         }
     }
 
@@ -129,7 +146,7 @@ class PixelTracker @JvmOverloads constructor(
         stopRefreshTimer()
 
         if (isDebugMode) {
-            Log.d(tag, "Stopping pixel tracking with ID: $pixelId")
+            Log.d(tag, "[$libraryVersion] Stopping pixel tracking - ID: $pixelId, Total: $visibilityCount")
         }
     }
 
@@ -146,6 +163,10 @@ class PixelTracker @JvmOverloads constructor(
                 }
             }
         }
+
+        if (isDebugMode) {
+            Log.d(tag, "[$libraryVersion] Periodic check started - Interval: ${checkInterval}ms")
+        }
     }
 
     /**
@@ -154,6 +175,10 @@ class PixelTracker @JvmOverloads constructor(
     private fun stopPeriodicCheck() {
         checkJob?.cancel()
         checkJob = null
+
+        if (isDebugMode) {
+            Log.d(tag, "[$libraryVersion] Periodic check stopped")
+        }
     }
 
     /**
@@ -180,7 +205,7 @@ class PixelTracker @JvmOverloads constructor(
                 logger.logRefresh(pixelId, getTimestamp(), getRefreshMetadata())
 
                 if (isDebugMode) {
-                    Log.d(tag, "🔄 Refresh counted for pixel: $pixelId, total: $visibilityCount")
+                    Log.d(tag, "[$libraryVersion] Refresh counted - ID: $pixelId, Total: $visibilityCount, Next: ${refreshTime}ms")
                 }
 
                 // Перезапускаем таймер для следующего интервала
@@ -220,7 +245,7 @@ class PixelTracker @JvmOverloads constructor(
             logger.logAppearance(pixelId, getTimestamp(), getVisibilityMetadata(true))
 
             if (isDebugMode) {
-                Log.d(tag, "🎯 Appearance counted for pixel: $pixelId, total: $visibilityCount")
+                Log.d(tag, "[$libraryVersion] Pixel appeared - ID: $pixelId, Total: $visibilityCount, Refresh: ${if (refreshTime > 0) "enabled" else "disabled"}")
             }
 
             // Запускаем таймер только если refreshTime > 0
@@ -238,7 +263,7 @@ class PixelTracker @JvmOverloads constructor(
             logger.logDisappearance(pixelId, getTimestamp(), getVisibilityMetadata(false))
 
             if (isDebugMode) {
-                Log.d(tag, "👻 Pixel disappeared: $pixelId, continuous tracking stopped")
+                Log.d(tag, "[$libraryVersion] Pixel disappeared - ID: $pixelId, Total: $visibilityCount")
             }
 
             // Останавливаем таймер
@@ -256,7 +281,7 @@ class PixelTracker @JvmOverloads constructor(
                 logger.logRefresh(pixelId, getTimestamp(), getRefreshMetadata())
 
                 if (isDebugMode) {
-                    Log.d(tag, "🔄 Refresh counted for pixel: $pixelId, total: $visibilityCount")
+                    Log.d(tag, "[$libraryVersion] Automatic refresh - ID: $pixelId, Total: $visibilityCount, Next: ${refreshTime}ms")
                 }
             }
         }
@@ -306,6 +331,7 @@ class PixelTracker @JvmOverloads constructor(
         val hasVisibleRect = getGlobalVisibleRect(visibleRect)
 
         return mapOf(
+            "library_version" to libraryVersion,
             "visible" to isVisible,
             "total_appearances" to visibilityCount,
             "refresh_time" to refreshTime,
@@ -336,6 +362,7 @@ class PixelTracker @JvmOverloads constructor(
      */
     private fun getRefreshMetadata(): Map<String, Any> {
         return mapOf(
+            "library_version" to libraryVersion,
             "total_appearances" to visibilityCount,
             "refresh_time" to refreshTime,
             "continuous_time" to if (continuousVisibilityStartTime > 0)
@@ -357,6 +384,7 @@ class PixelTracker @JvmOverloads constructor(
      * Получает статистику
      */
     fun getStats(): Map<String, Any> = mapOf(
+        "library_version" to libraryVersion,
         "pixelId" to pixelId,
         "totalAppearances" to visibilityCount,
         "isCurrentlyVisible" to isActuallyVisible(),
@@ -379,6 +407,9 @@ class PixelTracker @JvmOverloads constructor(
      * Принудительно проверяет видимость (публичный метод)
      */
     fun checkVisibilityNow() {
+        if (isDebugMode) {
+            Log.d(tag, "[$libraryVersion] Manual visibility check requested")
+        }
         checkVisibility()
     }
 
@@ -392,7 +423,7 @@ class PixelTracker @JvmOverloads constructor(
         isContinuousTracking = false
 
         if (isDebugMode) {
-            Log.d(tag, "Counter reset for pixel: $pixelId")
+            Log.d(tag, "[$libraryVersion] Counter reset - ID: $pixelId")
         }
     }
 
@@ -404,10 +435,18 @@ class PixelTracker @JvmOverloads constructor(
         // Размер зависит от режима отладки
         val size = if (isDebugMode) pixelSize else 1
         setMeasuredDimension(size, size)
+
+        if (isDebugMode) {
+            Log.d(tag, "[$libraryVersion] Pixel measured - Size: ${size}x${size}px")
+        }
     }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        if (isDebugMode) {
+            Log.d(tag, "[$libraryVersion] Attached to window")
+        }
+
         if (isTracking) {
             // Перезапускаем отслеживание при повторном присоединении
             startPeriodicCheck()
@@ -417,6 +456,11 @@ class PixelTracker @JvmOverloads constructor(
     override fun onDetachedFromWindow() {
         stopTracking()
         coroutineScope.cancel()
+
+        if (isDebugMode) {
+            Log.d(tag, "[$libraryVersion] Detached from window")
+        }
+
         super.onDetachedFromWindow()
     }
 

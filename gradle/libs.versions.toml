@@ -9,6 +9,7 @@ material = "1.6.1"
 activity = "1.7.2"
 constraintlayout = "2.1.4"
 kotlinx-coroutines = "1.7.3"
+pixel-tracker = "0.0.0.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -19,6 +20,7 @@ material = { group = "com.google.android.material", name = "material", version.r
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+pixel-tracker-android = { module = "com.github.veonadtech:pixel-tracker-android-sdk", version.ref = "pixel-tracker" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

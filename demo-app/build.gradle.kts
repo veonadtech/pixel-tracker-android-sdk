@@ -42,6 +42,7 @@ android {
 
 dependencies {
     implementation(project(":pixel-tracker"))
+  //  implementation(libs.pixel.tracker.android)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
