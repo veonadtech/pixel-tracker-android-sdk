@@ -5,81 +5,88 @@ import com.example.pixeltracker.model.PixelEvent
 import com.example.pixeltracker.network.PixelNetworkManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicReference
 
-
-/**
- * Реализация PixelLogger, которая отправляет события на сервер через PixelNetworkManager.
- * Отправляет события ВСЕГДА, независимо от debug режима.
- */
 internal class NetworkPixelLogger(
-    val delegate: PixelLogger? = null
+    private val networkManager: PixelNetworkManager
 ) : PixelLogger {
 
-    private val libraryVersion: String = try {
+    private companion object {
+        const val TAG = "NetworkPixelLogger"
+    }
+
+    private val delegateRef = AtomicReference<PixelLogger?>()
+
+    private val job = SupervisorJob()
+    private val scope = CoroutineScope(Dispatchers.IO + job)
+
+    private val sdkVersion: String = try {
         BuildConfig.LIBRARY_VERSION
     } catch (_: Exception) {
         "unknown"
     }
 
-    private val networkManager: PixelNetworkManager? = PixelTracker.getNetworkManager()
+    fun setDelegate(delegate: PixelLogger?) {
+        delegateRef.set(delegate)
+    }
+
+    fun updateDebugMode(isDebugMode: Boolean) {
+        val delegate = delegateRef.get()
+        if (delegate is DefaultPixelLogger) {
+            delegate.isDebugMode = isDebugMode
+        }
+    }
 
     override fun logAppearance(pixelId: String, timestamp: String) {
-        delegate?.logAppearance(pixelId, timestamp)
-        enqueueNetworkEvent(
-            pixelId = pixelId,
-            eventType = PixelEvent.EventType.APPEARANCE,
-            timestamp = timestamp
-        )
+        delegateRef.get()?.logAppearance(pixelId, timestamp)
+        enqueue(pixelId, PixelEvent.EventType.APPEARANCE, timestamp)
     }
 
     override fun logRefresh(pixelId: String, timestamp: String) {
-        delegate?.logRefresh(pixelId, timestamp)
-        enqueueNetworkEvent(
-            pixelId = pixelId,
-            eventType = PixelEvent.EventType.REFRESH,
-            timestamp = timestamp
-        )
+        delegateRef.get()?.logRefresh(pixelId, timestamp)
+        enqueue(pixelId, PixelEvent.EventType.REFRESH, timestamp)
     }
 
     override fun logError(pixelId: String, error: String, timestamp: String) {
-        delegate?.logError(pixelId, error, timestamp)
-        enqueueNetworkEvent(
-            pixelId = pixelId,
-            eventType = PixelEvent.EventType.ERROR,
-            timestamp = timestamp,
-            errorMessage = error
-        )
+        delegateRef.get()?.logError(pixelId, error, timestamp)
+        enqueue(pixelId, PixelEvent.EventType.ERROR, timestamp, error)
     }
 
     override fun logDisappearance(pixelId: String, timestamp: String) {
-        delegate?.logDisappearance(pixelId, timestamp)
+        delegateRef.get()?.logDisappearance(pixelId, timestamp)
     }
 
-    private fun enqueueNetworkEvent(
+    private fun enqueue(
         pixelId: String,
         eventType: PixelEvent.EventType,
         timestamp: String,
         errorMessage: String? = null
     ) {
-        CoroutineScope(Dispatchers.IO).launch {
+        scope.launch {
             try {
-                networkManager?.enqueueEvent(
-                    PixelEvent(
-                        pixelId = pixelId,
-                        eventType = eventType,
-                        timestamp = timestamp.toLongOrNull() ?: System.currentTimeMillis(),
-                        sdkVersion = libraryVersion,
-                        errorMessage = errorMessage
-                    )
+                val event = PixelEvent(
+                    pixelId = pixelId,
+                    eventType = eventType,
+                    timestamp = timestamp.toLongOrNull()
+                        ?: System.currentTimeMillis(),
+                    sdkVersion = sdkVersion,
+                    errorMessage = errorMessage
                 )
-            } catch (e: Exception) {
-                // Логируем ошибки отправки только в debug режиме
-                if ((delegate as? DefaultPixelLogger)?.isDebugMode == true) {
-                    Log.e("NetworkPixelLogger", "Failed to enqueue event: ${e.message}")
+
+                networkManager.enqueueEvent(event)
+
+            } catch (t: Throwable) {
+                val delegate = delegateRef.get()
+                if (delegate is DefaultPixelLogger && delegate.isDebugMode) {
+                    Log.e(TAG, "Failed to enqueue event", t)
                 }
             }
         }
     }
 
+    fun shutdown() {
+        job.cancel()
+    }
 }

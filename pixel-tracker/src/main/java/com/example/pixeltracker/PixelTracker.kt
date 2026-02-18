@@ -10,26 +10,46 @@ object PixelTracker {
 
     private const val TAG = "PixelTracker"
 
-    // Private state
+    private val lock = Any()
 
+    // Private var
+
+    @Volatile
     private var networkManager: PixelNetworkManager? = null
+
+    @Volatile
     private var networkLogger: NetworkPixelLogger? = null
+
+    @Volatile
     private var isDebugMode: Boolean = false
 
     // Public API
 
     fun initialize(baseUrl: String, isDebugMode: Boolean = false) {
-        if (networkManager != null) {
-            Log.d(TAG, "Already initialized")
-            return
+        synchronized(lock) {
+
+            if (networkManager != null) {
+                Log.d(TAG, "Already initialized")
+                return
+            }
+
+            this.isDebugMode = isDebugMode
+
+            val manager = PixelNetworkManager(baseUrl, isDebugMode)
+
+            val logger = NetworkPixelLogger(manager).apply {
+                setDelegate(
+                    DefaultPixelLogger().apply {
+                        this.isDebugMode = isDebugMode
+                    }
+                )
+            }
+
+            networkManager = manager
+            networkLogger = logger
+
+            Log.d(TAG, "Initialized with URL: $baseUrl, debugMode: $isDebugMode")
         }
-
-        networkLogger = NetworkPixelLogger()
-
-        this.isDebugMode = isDebugMode
-        networkManager = PixelNetworkManager(baseUrl, isDebugMode)
-
-        Log.d(TAG, "Initialized with URL: $baseUrl, debugMode: $isDebugMode")
     }
 
     fun createView(
@@ -39,27 +59,33 @@ object PixelTracker {
         pixelSize: Int = 1
     ): PixelTrackerView {
 
-        if (networkManager == null) {
-            Log.w(TAG, "Network manager not initialized. Events will not be sent.")
-        }
+        val logger = networkLogger ?: createFallbackLogger()
 
         return PixelTrackerView(context, pixelId).apply {
             refreshTime = refreshTimeSeconds * 1000
             this.pixelSize = pixelSize
             isDebugMode = this@PixelTracker.isDebugMode
+            setLogger(logger)
         }
     }
 
     fun shutdown() {
-        networkManager?.shutdown()
-        networkManager = null
-        networkLogger?.shutdown()
-        networkLogger = null
-        Log.d(TAG, "Shutdown complete")
+        synchronized(lock) {
+            networkManager?.shutdown()
+            networkLogger?.shutdown()
+
+            networkManager = null
+            networkLogger = null
+
+            Log.d(TAG, "Shutdown complete")
+        }
     }
 
-    // Internal API
+    // Private methods
 
-    internal fun getNetworkManager(): PixelNetworkManager? = networkManager
-
+    private fun createFallbackLogger(): PixelLogger {
+        return DefaultPixelLogger().apply {
+            isDebugMode = this@PixelTracker.isDebugMode
+        }
+    }
 }

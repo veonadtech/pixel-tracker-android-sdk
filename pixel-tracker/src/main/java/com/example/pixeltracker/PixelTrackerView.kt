@@ -7,7 +7,12 @@ import android.util.Log
 import android.view.View
 import androidx.annotation.Keep
 import androidx.core.view.isVisible
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.max
 
 @Keep
@@ -72,11 +77,23 @@ class PixelTrackerView @JvmOverloads constructor(
         "unknown"
     }
 
-    private var logger: PixelLogger = createDefaultLogger()
+    lateinit var logger: PixelLogger
+        private set
 
     init {
         setupView()
         logInitialization()
+    }
+
+    // Public API for setting logger
+
+    fun setLogger(logger: PixelLogger) {
+        this.logger = logger
+        updateLoggerDebugMode()
+    }
+
+    fun setEventListener(listener: PixelEventListener?) {
+        this.eventListener = listener
     }
 
     // Lifecycle
@@ -104,16 +121,11 @@ class PixelTrackerView @JvmOverloads constructor(
         }
 
         stopTracking()
-        viewJob.cancelChildren()
-
+        viewJob.cancel()
         super.onDetachedFromWindow()
     }
 
     // Public API
-
-    fun setEventListener(listener: PixelEventListener?) {
-        this.eventListener = listener
-    }
 
     fun startTracking() {
         if (isTracking) return
@@ -159,14 +171,21 @@ class PixelTrackerView @JvmOverloads constructor(
     }
 
     fun getStats(): Map<String, Any> = mapOf(
-        "pixelId" to pixelId,
         "totalAppearances" to visibilityCount,
-        "isTracking" to isTracking,
-        "refreshTime" to refreshTime,
-        "pixelSize" to pixelSize
+        "refreshEnabled" to (refreshTime > 0),
+        "isCurrentlyVisible" to isPixelActuallyVisible(),
+        "nextRefreshIn" to calculateNextRefreshIn()
     )
 
     // Private methods
+
+    private fun calculateNextRefreshIn(): Long {
+        return if (isContinuousTracking && nextRefreshTime > 0) {
+            max(0, nextRefreshTime - System.currentTimeMillis())
+        } else {
+            0
+        }
+    }
 
     private fun setupView() {
         setBackgroundColor(0x00000000)
@@ -210,8 +229,9 @@ class PixelTrackerView @JvmOverloads constructor(
                 continuousVisibilityStartTime = System.currentTimeMillis()
                 nextRefreshTime = continuousVisibilityStartTime + refreshTime
 
-                logger.logRefresh(pixelId, getTimestamp())
-                eventListener?.onRefresh(pixelId, getTimestamp())
+                val ts = getTimestamp()
+                logger.logRefresh(pixelId, ts)
+                eventListener?.onRefresh(pixelId, ts)
 
                 startRefreshTimer()
             }
@@ -237,8 +257,9 @@ class PixelTrackerView @JvmOverloads constructor(
                 startRefreshTimer()
             }
 
-            logger.logAppearance(pixelId, getTimestamp())
-            eventListener?.onAppearance(pixelId, getTimestamp())
+            val ts = getTimestamp()
+            logger.logAppearance(pixelId, ts)
+            eventListener?.onAppearance(pixelId, ts)
         }
 
         if (!visibleNow && wasVisible) {
@@ -246,8 +267,9 @@ class PixelTrackerView @JvmOverloads constructor(
             isContinuousTracking = false
             stopRefreshTimer()
 
-            logger.logDisappearance(pixelId, getTimestamp())
-            eventListener?.onDisappearance(pixelId, getTimestamp())
+            val ts = getTimestamp()
+            logger.logDisappearance(pixelId, ts)
+            eventListener?.onDisappearance(pixelId, ts)
         }
     }
 
@@ -263,19 +285,17 @@ class PixelTrackerView @JvmOverloads constructor(
                 rect.height() >= visibilityThreshold
     }
 
-    private fun createDefaultLogger(): PixelLogger {
-        val defaultLogger = DefaultPixelLogger().apply {
-            isDebugMode = this@PixelTrackerView.isDebugMode
-        }
-        return NetworkPixelLogger(defaultLogger)
-    }
-
     private fun updateLoggerDebugMode() {
+        if (!::logger.isInitialized) return
+
         when (val current = logger) {
-            is NetworkPixelLogger ->
-                (current.delegate as? DefaultPixelLogger)?.isDebugMode = isDebugMode
-            is DefaultPixelLogger ->
+            is NetworkPixelLogger -> {
+                current.updateDebugMode(isDebugMode)
+
+            }
+            is DefaultPixelLogger -> {
                 current.isDebugMode = isDebugMode
+            }
         }
     }
 

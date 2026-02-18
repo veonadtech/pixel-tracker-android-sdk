@@ -7,7 +7,8 @@ import android.util.Log
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.example.pixeltracker.*
+import com.example.pixeltracker.PixelTracker
+import com.example.pixeltracker.PixelTrackerView
 import com.example.pixeltrackerdemo.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
@@ -161,7 +162,7 @@ class MainActivity : AppCompatActivity() {
                             Toast.LENGTH_SHORT
                         ).show()
 
-                        binding.pixelStatusText.text = "🔄 NEW VIEW"
+                        binding.pixelStatusText.text = "NEW VIEW"
                         binding.pixelStatusText.setTextColor(Color.parseColor("#FF9800"))
 
                         updateShowCount()
@@ -189,7 +190,7 @@ class MainActivity : AppCompatActivity() {
 
         pixelTracker.startTracking()
 
-        binding.pixelStatusText.text = "🟡 TRACKING"
+        binding.pixelStatusText.text = "TRACKING"
         binding.pixelStatusText.setTextColor(getColor(android.R.color.holo_orange_dark))
 
         binding.hintTextView.text = "Scroll down to find the red pixel"
@@ -242,7 +243,7 @@ class MainActivity : AppCompatActivity() {
             binding.showCountText.text = "Total Appearances: $appearances"
 
             if (isVisible && refreshEnabled && nextRefreshIn > 0) {
-                val secondsToNext = nextRefreshIn / 1000
+                val secondsToNext = nextRefreshIn / 1000 + 1
                 binding.hintTextView.text = "Next view in: ${secondsToNext}s"
             } else if (refreshEnabled) {
                 binding.hintTextView.text = "Refresh: ${refreshTimeSeconds}s"
