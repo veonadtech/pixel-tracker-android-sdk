@@ -10,4 +10,9 @@ class Demo : Application() {
 
         PixelTracker.initialize("https://your-server.com/api",  true)
     }
+
+    override fun onTerminate() {
+        PixelTracker.shutdown()
+        super.onTerminate()
+    }
 }

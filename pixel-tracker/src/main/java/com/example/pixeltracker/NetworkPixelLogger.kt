@@ -24,7 +24,8 @@ internal class NetworkPixelLogger(
 
     private val networkManager: PixelNetworkManager? = PixelTracker.getNetworkManager()
 
-    override fun logAppearance(pixelId: String, timestamp: String, metadata: Map<String, Any>) {
+    override fun logAppearance(pixelId: String, timestamp: String) {
+        delegate?.logAppearance(pixelId, timestamp)
         enqueueNetworkEvent(
             pixelId = pixelId,
             eventType = PixelEvent.EventType.APPEARANCE,
@@ -32,7 +33,8 @@ internal class NetworkPixelLogger(
         )
     }
 
-    override fun logRefresh(pixelId: String, timestamp: String, metadata: Map<String, Any>) {
+    override fun logRefresh(pixelId: String, timestamp: String) {
+        delegate?.logRefresh(pixelId, timestamp)
         enqueueNetworkEvent(
             pixelId = pixelId,
             eventType = PixelEvent.EventType.REFRESH,
@@ -41,6 +43,7 @@ internal class NetworkPixelLogger(
     }
 
     override fun logError(pixelId: String, error: String, timestamp: String) {
+        delegate?.logError(pixelId, error, timestamp)
         enqueueNetworkEvent(
             pixelId = pixelId,
             eventType = PixelEvent.EventType.ERROR,
@@ -49,7 +52,8 @@ internal class NetworkPixelLogger(
         )
     }
 
-    override fun logDisappearance(pixelId: String, timestamp: String, metadata: Map<String, Any>) {
+    override fun logDisappearance(pixelId: String, timestamp: String) {
+        delegate?.logDisappearance(pixelId, timestamp)
     }
 
     private fun enqueueNetworkEvent(
@@ -77,4 +81,5 @@ internal class NetworkPixelLogger(
             }
         }
     }
+
 }

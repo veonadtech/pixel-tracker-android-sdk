@@ -18,19 +18,19 @@ internal class DefaultPixelLogger : PixelLogger {
     // Флаг debug режима
     var isDebugMode: Boolean = false
 
-    override fun logAppearance(pixelId: String, timestamp: String, metadata: Map<String, Any>) {
+    override fun logAppearance(pixelId: String, timestamp: String) {
         if (isDebugMode) {
             Log.d("PixelTracker", "[$libraryVersion] 🔵 Pixel appeared: $pixelId at $timestamp")
         }
     }
 
-    override fun logDisappearance(pixelId: String, timestamp: String, metadata: Map<String, Any>) {
+    override fun logDisappearance(pixelId: String, timestamp: String) {
         if (isDebugMode) {
             Log.d("PixelTracker", "[$libraryVersion] 🔴 Pixel disappeared: $pixelId at $timestamp")
         }
     }
 
-    override fun logRefresh(pixelId: String, timestamp: String, metadata: Map<String, Any>) {
+    override fun logRefresh(pixelId: String, timestamp: String) {
         if (isDebugMode) {
             Log.d("PixelTracker", "[$libraryVersion] 🔄 Pixel refresh counted: $pixelId at $timestamp")
         }

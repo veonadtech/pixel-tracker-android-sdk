@@ -4,67 +4,62 @@ import android.content.Context
 import android.util.Log
 import com.example.pixeltracker.network.PixelNetworkManager
 
-/**
- * Фасад для инициализации и создания PixelTrackerView.
- * Инициализация сети должна быть вызвана один раз в Application.
- */
 object PixelTracker {
 
-    // Внутренний сетевой менеджер
-    private var networkManager: PixelNetworkManager? = null
+    // Constants
 
-    // Глобальный debug режим для всей библиотеки
+    private const val TAG = "PixelTracker"
+
+    // Private state
+
+    private var networkManager: PixelNetworkManager? = null
+    private var networkLogger: NetworkPixelLogger? = null
     private var isDebugMode: Boolean = false
 
-    /**
-     * Инициализация сетевого слоя (вызывается один раз в Application)
-     * @param baseUrl URL сервера для отправки событий
-     * @param isDebugMode Глобальный debug режим для всех пикселей
-     */
+    // Public API
+
     fun initialize(baseUrl: String, isDebugMode: Boolean = false) {
         if (networkManager != null) {
-            Log.d("PixelTracker", "Already initialized")
+            Log.d(TAG, "Already initialized")
             return
         }
 
+        networkLogger = NetworkPixelLogger()
+
         this.isDebugMode = isDebugMode
         networkManager = PixelNetworkManager(baseUrl, isDebugMode)
-        Log.d("PixelTracker", "Initialized with URL: $baseUrl, debugMode: $isDebugMode")
+
+        Log.d(TAG, "Initialized with URL: $baseUrl, debugMode: $isDebugMode")
     }
 
-    /**
-     * Создание View для отслеживания
-     * @param isDebugMode Переопределяет глобальный debug режим для конкретного пикселя (опционально)
-     */
     fun createView(
         context: Context,
         pixelId: String,
         refreshTimeSeconds: Long = 0L,
         pixelSize: Int = 1
     ): PixelTrackerView {
-        // Проверяем инициализацию
+
         if (networkManager == null) {
-            Log.w("PixelTracker", "Network manager not initialized. Events will not be sent.")
+            Log.w(TAG, "Network manager not initialized. Events will not be sent.")
         }
 
         return PixelTrackerView(context, pixelId).apply {
-            this.refreshTime = refreshTimeSeconds * 1000
+            refreshTime = refreshTimeSeconds * 1000
             this.pixelSize = pixelSize
-            this.isDebugMode = this@PixelTracker.isDebugMode
+            isDebugMode = this@PixelTracker.isDebugMode
         }
     }
 
-    /**
-     * Для тестирования или внутреннего использования
-     */
-    internal fun getNetworkManager(): PixelNetworkManager? = networkManager
-
-    /**
-     * Завершает работу сетевого слоя
-     */
     fun shutdown() {
         networkManager?.shutdown()
         networkManager = null
-        Log.d("PixelTracker", "Shutdown complete")
+        networkLogger?.shutdown()
+        networkLogger = null
+        Log.d(TAG, "Shutdown complete")
     }
+
+    // Internal API
+
+    internal fun getNetworkManager(): PixelNetworkManager? = networkManager
+
 }
