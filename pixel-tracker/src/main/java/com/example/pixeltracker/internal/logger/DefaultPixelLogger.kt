@@ -1,9 +1,11 @@
-package com.example.pixeltracker
+package com.example.pixeltracker.internal.logger
 
 import android.util.Log
+import com.example.pixeltracker.BuildConfig
+import com.example.pixeltracker.api.PixelLogger
 
 /**
- * Реализация PixelLogger, которая логирует события в Android LogCat только в debug режиме.
+ * Implementation of PixelLogger that logs events to Android LogCat only in debug mode.
  */
 internal class DefaultPixelLogger : PixelLogger {
 
@@ -15,7 +17,6 @@ internal class DefaultPixelLogger : PixelLogger {
         }
     }
 
-    // Флаг debug режима
     var isDebugMode: Boolean = false
 
     override fun logAppearance(pixelId: String, timestamp: String) {

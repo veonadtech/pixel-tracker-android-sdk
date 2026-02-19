@@ -24,6 +24,9 @@ import java.util.concurrent.TimeUnit
 import kotlin.math.min
 import kotlin.math.pow
 
+/**
+ * Manages the network queue and delivery of pixel events to a remote server.
+ */
 class PixelNetworkManager(
     private val baseUrl: String,
     private val isDebugMode: Boolean
@@ -39,10 +42,6 @@ class PixelNetworkManager(
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    /**
-     * Channel вместо Mutex + ArrayDeque.
-     * DROP_OLDEST защищает от OOM при спайке событий.
-     */
     private val eventChannel = Channel<PixelEvent>(
         capacity = CHANNEL_CAPACITY,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
@@ -62,9 +61,6 @@ class PixelNetworkManager(
         processorJob = startProcessor()
     }
 
-    /**
-     * Публичный API — неблокирующий.
-     */
     fun enqueueEvent(event: PixelEvent) {
         val result = eventChannel.trySend(event)
         if (result.isFailure) {
@@ -72,10 +68,6 @@ class PixelNetworkManager(
         }
     }
 
-    /**
-     * Основной процессор очереди.
-     * Работает только когда есть события.
-     */
     private fun startProcessor(): Job {
         return scope.launch {
             for (event in eventChannel) {
@@ -84,9 +76,6 @@ class PixelNetworkManager(
         }
     }
 
-    /**
-     * Retry с exponential backoff.
-     */
     private suspend fun sendEventWithRetry(event: PixelEvent) {
         repeat(MAX_RETRIES) { attempt ->
 
@@ -111,9 +100,6 @@ class PixelNetworkManager(
         }
     }
 
-    /**
-     * Реальная отправка.
-     */
     private suspend fun sendEvent(event: PixelEvent): Boolean {
 
         val json = gson.toJson(event)
@@ -185,16 +171,13 @@ class PixelNetworkManager(
     }
 
     /**
-     * Exponential backoff: 1s → 2s → 4s (с ограничением)
+     * Exponential backoff: 1s → 2s → 4s (with cap)
      */
     private fun calculateBackoff(attempt: Int): Long {
         val delay = INITIAL_RETRY_DELAY_MS * 2.0.pow(attempt).toLong()
         return min(delay, MAX_RETRY_DELAY_MS)
     }
 
-    /**
-     * Корректное завершение работы SDK.
-     */
     fun shutdown() {
         eventChannel.close()
         processorJob.cancel()
@@ -204,7 +187,7 @@ class PixelNetworkManager(
     }
 
     /**
-     * Для debug.
+     * For debug purposes.
      */
     fun isActive(): Boolean = processorJob.isActive
 }

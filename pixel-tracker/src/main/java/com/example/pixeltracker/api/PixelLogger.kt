@@ -1,4 +1,4 @@
-package com.example.pixeltracker
+package com.example.pixeltracker.api
 
 /**
  * Defines a contract for logging pixel lifecycle events.

@@ -1,6 +1,8 @@
-package com.example.pixeltracker
+package com.example.pixeltracker.internal.logger
 
 import android.util.Log
+import com.example.pixeltracker.BuildConfig
+import com.example.pixeltracker.api.PixelLogger
 import com.example.pixeltracker.model.PixelEvent
 import com.example.pixeltracker.network.PixelNetworkManager
 import kotlinx.coroutines.CoroutineScope
@@ -9,11 +11,11 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicReference
 
-internal class NetworkPixelLogger(
+internal class PixelNetworkLogger(
     private val networkManager: PixelNetworkManager
 ) : PixelLogger {
 
-    private companion object {
+    private companion object Companion {
         const val TAG = "NetworkPixelLogger"
     }
 
@@ -30,13 +32,6 @@ internal class NetworkPixelLogger(
 
     fun setDelegate(delegate: PixelLogger?) {
         delegateRef.set(delegate)
-    }
-
-    fun updateDebugMode(isDebugMode: Boolean) {
-        val delegate = delegateRef.get()
-        if (delegate is DefaultPixelLogger) {
-            delegate.isDebugMode = isDebugMode
-        }
     }
 
     override fun logAppearance(pixelId: String, timestamp: String) {
