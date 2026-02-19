@@ -16,12 +16,11 @@ import kotlinx.coroutines.launch
 import kotlin.math.max
 
 @Keep
-class PixelTrackerView @JvmOverloads constructor(
+@Suppress("ViewConstructor")
+class PixelTrackerView(
     context: Context,
-    private val pixelId: String,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = 0
-) : View(context, attrs, defStyleAttr) {
+    private val pixelId: String
+) : View(context) {
 
     // Public properties
 

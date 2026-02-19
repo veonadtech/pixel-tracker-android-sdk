@@ -16,8 +16,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var pixelTracker: PixelTrackerView
     private var isDescriptionExpanded = false
-    private var refreshTimeSeconds: Long = 5L // По умолчанию 5 секунд
-    private val debugPixelSize: Int = 40 // Размер пикселя в debug режиме
+    private var refreshTimeSeconds: Long = 5L
+    private val debugPixelSize: Int = 40
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +34,6 @@ class MainActivity : AppCompatActivity() {
         binding.titleTextView.text = "Pixel Tracker Demo"
         updateDescriptionText()
 
-        // Сворачиваемое/разворачиваемое описание
         binding.descriptionTextView.setOnClickListener {
             isDescriptionExpanded = !isDescriptionExpanded
 
@@ -107,7 +106,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupPixelTracker() {
-        // Создаем пиксель программно
         pixelTracker = PixelTracker.createView(
             context = this,
             pixelId = "demo_pixel_${System.currentTimeMillis()}",
@@ -116,7 +114,6 @@ class MainActivity : AppCompatActivity() {
         ).apply {
             visibilityThreshold = 1
 
-            // Устанавливаем слушатель событий (ВМЕСТО кастомного логгера)
             setEventListener(object : PixelTrackerView.PixelEventListener {
                 override fun onAppearance(pixelId: String, timestamp: String) {
                     runOnUiThread {
@@ -175,7 +172,6 @@ class MainActivity : AppCompatActivity() {
             })
         }
 
-        // Добавляем пиксель в контейнер
         val layoutParams = android.widget.FrameLayout.LayoutParams(
             debugPixelSize,
             debugPixelSize
@@ -215,7 +211,7 @@ class MainActivity : AppCompatActivity() {
                 android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
                 screenHeight
             ).apply {
-                topMargin = (screenHeight * 2).toInt()
+                topMargin = (screenHeight * 2)
             }
             setImageResource(R.drawable.demo_image_2)
             scaleType = ImageView.ScaleType.CENTER_CROP
@@ -274,4 +270,5 @@ class MainActivity : AppCompatActivity() {
         }
         super.onDestroy()
     }
+    
 }
