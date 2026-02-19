@@ -5,6 +5,7 @@ import com.example.pixeltracker.model.PixelEvent
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -100,6 +101,7 @@ class PixelNetworkManager(
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun sendEvent(event: PixelEvent): Boolean {
 
         val json = gson.toJson(event)

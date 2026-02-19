@@ -9,11 +9,13 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import com.example.pixeltracker.PixelTracker
 import com.example.pixeltracker.api.PixelConfig
 import com.example.pixeltracker.api.PixelEventListener
 import com.example.pixeltracker.api.PixelHandle
 import com.example.pixeltrackerdemo.databinding.ActivityMainBinding
+import androidx.core.graphics.toColorInt
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,7 +36,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupUI() {
-        binding.titleTextView.text = "Pixel Tracker Demo"
+        binding.titleTextView.text = getString(R.string.app_name)
         updateDescriptionText()
 
         binding.descriptionTextView.setOnClickListener {
@@ -54,20 +56,18 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateDescriptionText() {
         val refreshInfo = if (refreshTimeSeconds > 0) {
-            "2. Keep pixel on screen for $refreshTimeSeconds seconds to count another view"
+            getString(R.string.refresh_instruction, refreshTimeSeconds)
         } else {
-            "2. Refresh disabled - pixel counts only on appearance"
+            getString(R.string.refresh_disabled)
         }
 
-        val sizeInfo = "Pixel size: ${debugPixelSize}x${debugPixelSize}px (debug mode)"
+        val sizeInfo = getString(R.string.pixel_size_info, debugPixelSize, debugPixelSize)
 
-        binding.descriptionTextView.text = """
-            How it works:
-            1. Scroll down 1.5 screens to see the red pixel
-            $refreshInfo
-            3. Scroll up to hide pixel, then down again to restart counting
-            $sizeInfo
-        """.trimIndent()
+        binding.descriptionTextView.text = getString(
+            R.string.description_template,
+            refreshInfo,
+            sizeInfo
+        ).trimIndent()
     }
 
     private fun setupRefreshControl() {
@@ -93,10 +93,10 @@ class MainActivity : AppCompatActivity() {
         binding.tvRefreshTime.text = displayText
 
         if (refreshTimeSeconds == 0L) {
-            binding.btnDecreaseRefresh.setBackgroundColor(Color.parseColor("#CCCCCC"))
+            binding.btnDecreaseRefresh.setBackgroundColor("#CCCCCC".toColorInt())
             binding.btnDecreaseRefresh.isEnabled = false
         } else {
-            binding.btnDecreaseRefresh.setBackgroundColor(Color.parseColor("#4CAF50"))
+            binding.btnDecreaseRefresh.setBackgroundColor("#4CAF50".toColorInt())
             binding.btnDecreaseRefresh.isEnabled = true
         }
     }
@@ -141,15 +141,14 @@ class MainActivity : AppCompatActivity() {
             override fun onAppearance(pixelId: String, timestamp: String) {
                 runOnUiThread {
                     val message = if (refreshTimeSeconds > 0) {
-                        "🎯 Pixel is visible (refresh every ${refreshTimeSeconds}s)"
+                        getString(R.string.pixel_visible_refresh, refreshTimeSeconds)
                     } else {
-                        "🎯 Pixel is visible"
+                        getString(R.string.pixel_visible)
                     }
 
                     Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
-
-                    binding.pixelStatusText.text = "✅ VISIBLE"
-                    binding.pixelStatusText.setTextColor(getColor(android.R.color.holo_green_dark))
+                    binding.pixelStatusText.text = getString(R.string.visible)
+                    binding.pixelStatusText.setTextColor(ContextCompat.getColor(this@MainActivity, android.R.color.holo_green_dark))
 
                     updateShowCount()
                 }
@@ -159,8 +158,8 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     Toast.makeText(this@MainActivity, "👻 Pixel hidden", Toast.LENGTH_SHORT).show()
 
-                    binding.pixelStatusText.text = "❌ HIDDEN"
-                    binding.pixelStatusText.setTextColor(getColor(android.R.color.holo_red_dark))
+                    binding.pixelStatusText.text = getString(R.string.hidden)
+                    binding.pixelStatusText.setTextColor(ContextCompat.getColor(this@MainActivity,android.R.color.holo_red_dark))
 
                     updateShowCount()
                 }
@@ -170,8 +169,8 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     Toast.makeText(this@MainActivity, "🔄 New view counted (refresh)", Toast.LENGTH_SHORT).show()
 
-                    binding.pixelStatusText.text = "NEW VIEW"
-                    binding.pixelStatusText.setTextColor(Color.parseColor("#FF9800"))
+                    binding.pixelStatusText.text = getString(R.string.new_view)
+                    binding.pixelStatusText.setTextColor("#FF9800".toColorInt())
 
                     updateShowCount()
                 }
@@ -184,9 +183,9 @@ class MainActivity : AppCompatActivity() {
 
         pixelTracker.start()
 
-        binding.pixelStatusText.text = "TRACKING"
-        binding.pixelStatusText.setTextColor(getColor(android.R.color.holo_orange_dark))
-        binding.hintTextView.text = "Scroll down to find the red pixel"
+        binding.pixelStatusText.text = getString(R.string.tracking)
+        binding.pixelStatusText.setTextColor(ContextCompat.getColor(this@MainActivity,android.R.color.holo_orange_dark))
+        binding.hintTextView.text = getString(R.string.scroll_hint)
     }
 
     private fun setupImages() {
@@ -223,15 +222,19 @@ class MainActivity : AppCompatActivity() {
             val stats = pixelTracker.getStats()
 
             binding.showCountText.text =
-                "Total Appearances: ${stats.totalAppearances}"
+                getString(R.string.total_appearances, stats.totalAppearances)
 
-            if (stats.isCurrentlyVisible && stats.refreshEnabled && stats.nextRefreshInMs > 0) {
-                val secondsToNext = stats.nextRefreshInMs / 1000 + 1
-                binding.hintTextView.text = "Next view in: ${secondsToNext}s"
-            } else if (stats.refreshEnabled) {
-                binding.hintTextView.text = "Refresh: ${refreshTimeSeconds}s"
-            } else {
-                binding.hintTextView.text = "Refresh: Off"
+            when {
+                stats.isCurrentlyVisible && stats.refreshEnabled && stats.nextRefreshInMs > 0 -> {
+                    val secondsToNext = stats.nextRefreshInMs / 1000 + 1
+                    binding.hintTextView.text = getString(R.string.next_view_in, secondsToNext)
+                }
+                stats.refreshEnabled -> {
+                    binding.hintTextView.text = getString(R.string.refresh_seconds, refreshTimeSeconds)
+                }
+                else -> {
+                    binding.hintTextView.text = getString(R.string.refresh_off)
+                }
             }
         }
     }
