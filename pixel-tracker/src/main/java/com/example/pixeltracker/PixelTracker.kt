@@ -1,6 +1,7 @@
 package com.example.pixeltracker
 
 import android.content.Context
+import android.util.Log
 import android.view.ViewGroup
 import com.example.pixeltracker.api.PixelConfig
 import com.example.pixeltracker.api.PixelHandle
@@ -10,6 +11,9 @@ import com.example.pixeltracker.internal.tracker.PixelTrackerView
 import com.example.pixeltracker.network.PixelNetworkManager
 
 object PixelTracker {
+
+    private const val TAG = "PixelTracker"
+
 
     private val lock = Any()
 
@@ -38,6 +42,9 @@ object PixelTracker {
             }
 
             networkManager = manager
+
+            Log.d(TAG, "Pixel tracker SDK initialized with URL: $baseUrl, debugMode: $isDebugMode")
+
         }
     }
 
@@ -64,6 +71,8 @@ object PixelTracker {
             networkManager = null
             pixelNetworkLogger?.shutdown()
             pixelNetworkLogger = null
+
+            Log.d(TAG, "Pixel tracker SDK shutdown")
         }
     }
 }
