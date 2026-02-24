@@ -181,6 +181,8 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        pixelTracker1.setVisibilityCheckInterval(3)
+
         pixelTracker.start()
 
         binding.pixelStatusText.text = getString(R.string.tracking)

@@ -50,6 +50,23 @@ interface PixelHandle {
     fun updateRefreshTime(seconds: Long)
 
     /**
+     * Sets the interval at which the pixel's visibility is checked.
+     *
+     * The visibility check interval determines how frequently the system
+     * evaluates whether the pixel is still visible on screen. A shorter interval
+     * provides more precise tracking at the cost of higher resource usage.
+     *
+     * The default value is 3 seconds (3000ms) unless specified otherwise in [PixelConfig].
+     *
+     * @param seconds Visibility check interval in seconds. Must be >= 0.
+     *                Setting to 0 will cause continuous checking (not recommended).
+     * @throws IllegalArgumentException if seconds is negative.
+     *
+     * @see updateRefreshTime
+     */
+    fun setVisibilityCheckInterval(seconds: Long)
+
+    /**
      * Returns current statistics for this pixel.
      *
      * The returned statistics provide information about the pixel's tracking state,

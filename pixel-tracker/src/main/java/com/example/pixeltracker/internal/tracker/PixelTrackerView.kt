@@ -33,7 +33,7 @@ internal class PixelTrackerView(
     private var wasVisible = false
     private var totalAppearances = 0
     private var nextRefreshTime = 0L
-    private var checkInterval: Long = 3000L
+    private var visibilityCheckInterval: Long = 3000L
     private var refreshJob: Job? = null
 
     private var refreshTimeMs = config.refreshTimeSeconds * 1000
@@ -65,6 +65,10 @@ internal class PixelTrackerView(
         refreshTimeMs = max(0, seconds * 1000)
     }
 
+    override fun setVisibilityCheckInterval(seconds: Long) {
+        visibilityCheckInterval = max(0, seconds * 1000)
+    }
+
     override fun setEventListener(listener: PixelEventListener?) {
         this.listener = listener
     }
@@ -94,7 +98,7 @@ internal class PixelTrackerView(
     private fun checkVisibilityLoop() {
         scope.launch {
             while (isTracking) {
-                delay(checkInterval)
+                delay(visibilityCheckInterval)
                 handleVisibility()
             }
         }
