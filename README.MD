@@ -1,85 +1,204 @@
-# Pixel Tracker Library
+# Pixel Tracker Android SDK
 
-Android library for tracking 1x1 pixel visibility with detailed logging.
 
-## Features
-- 📊 Tracks when a 1x1 transparent pixel becomes visible on screen
-- 🎯 Configurable visibility threshold and debounce time
-- 📝 Customizable logging (console, file, network, etc.)
-- 🆔 Unique pixel IDs for multiple trackers
-- 📈 Detailed metadata and statistics
-- 🎨 Easy integration with XML or programmatically
+A lightweight Android SDK for tracking pixel visibility events.  
+Designed for ad impressions, analytics, and user behavior monitoring.
+
+---
+
+## Table of Contents
+
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Initialize SDK](#initialize-sdk)
+- [Usage](#usage)
+- [Pixel Events](#pixel-events)
+- [Statistics](#statistics)
+- [Control Tracking](#control-tracking)
+- [Troubleshooting](#troubleshooting)
+- [Support](#support)
+
+---
+
+## Overview
+
+Pixel Tracker SDK provides:
+
+- 👁 Automatic visibility detection
+- 🔄 Configurable refresh counting
+- 🎯 Visibility threshold configuration
+- 📊 Real-time statistics
+- 🐛 Debug visualization mode
+- 📦 Minimal footprint
+
+---
+
+## Requirements
+
+- Android API 19+
+- Kotlin 1.8+
+- Gradle 8.0+
+
+---
 
 ## Installation
 
-Add JitPack repository to your root `build.gradle`:
+### Use Maven
 
-```gradle
-allprojects {
+#### 1. Add JitPack repository
+
+`settings.gradle.kts`:
+
+```kotlin
+dependencyResolutionManagement {
     repositories {
-        maven { url 'https://jitpack.io' }
+        google()
+        mavenCentral()
+        maven { url = uri("https://jitpack.io") }
     }
 }
 ```
-# Add dependency:
-```gradle
+
+#### 2. Add dependency
+
+`build.gradle.kts`:
+
+```kotlin
 dependencies {
-    implementation 'com.github.yourusername:pixel-tracker:1.0.0'
+    implementation("com.github.veonadtech:pixel-tracker-android-sdk:0.1.0")
 }
 ```
+
+> Replace `0.1.0` with the latest version.
+
+---
+
+## Initialize SDK
+
+Initialize once at app startup
+
+```kotlin
+class MyApp : Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+
+        PixelTracker.initialize(
+            baseUrl = "PIXEL_SERVER_URI",
+            isDebugMode = false
+        )
+    }
+}
+```
+
+Add Internet permission:
+
+```xml
+<uses-permission android:name="android.permission.INTERNET" />
+```
+
+---
+
 ## Usage
 
-# Programmatic creation:
-```kotlin
-val pixelTracker = PixelTracker.create(context, "my_pixel_id")
-pixelTracker.startTracking()
+### Attach Pixel
 
-// Get stats
+- Create pixelContainer programmatically or via XML 
+with pixel size (visible in debug mode, 1x1 in production).
+- Add container to your layout
+- Attach pixel tracker
+```kotlin
+val pixelTracker = PixelTracker.attach(
+    context = this,
+    container = pixelContainer,
+    config = PixelConfig(
+        pixelId = "home_screen_banner",
+        refreshTimeSeconds = 30,
+        pixelSize = 1,
+        visibilityThreshold = 1
+    )
+)
+
+pixelTracker.start()
+
+```
+
+---
+
+## Pixel Events
+
+```kotlin
+pixelTracker.setEventListener(object : PixelEventListener {
+
+    override fun onAppearance(pixelId: String, timestamp: String) {}
+
+    override fun onDisappearance(pixelId: String, timestamp: String) {}
+
+    override fun onRefresh(pixelId: String, timestamp: String) {}
+
+    override fun onError(pixelId: String, error: String, timestamp: String) {}
+})
+```
+
+---
+
+## Statistics
+
+```kotlin
 val stats = pixelTracker.getStats()
 
-// Stop tracking when done
-pixelTracker.stopTracking()
-XML layout:
-xml
-<com.example.pixeltracker.PixelTracker
-    android:layout_width="1px"
-    android:layout_height="1px"
-    app:pixelId="my_pixel"
-    app:logTag="MyTracker"
-    app:debounceTime="100"
-    app:visibilityThreshold="1"
-    app:isDebugMode="true" />
+Log.d("PixelStats", """
+Total Appearances: ${stats.totalAppearances}
+Currently Visible: ${stats.isCurrentlyVisible}
+Next Refresh In: ${stats.nextRefreshInMs}ms
+""")
 ```
-Demo App
 
-The project includes a demo app that shows:
-* Pixel placed at the bottom of scrollable content
-* Real-time visibility tracking
-* Toast notifications when pixel appears
-* Statistics display
-* Reset functionality
-Logging
-By default, logs are sent to Logcat with tag "PixelTracker". You can customize logging:
-kotlin
-pixelTracker.setCustomLogger(object : PixelTracker.PixelLogger {
-    override fun logAppearance(pixelId: String, timestamp: String, metadata: Map<String, Any>) {
-        // Send to your analytics service
-    }
-    
-    override fun logDisappearance(pixelId: String, timestamp: String, metadata: Map<String, Any>) {
-        // Custom logging logic
-    }
-    
-    override fun logError(pixelId: String, error: String, timestamp: String) {
-        // Error handling
-    }
-})
-Configuration
+---
 
+## Control Tracking
 
-Parameter	Default	Description
-pixelId	Random UUID	Unique identifier for the pixel
-logTag	"PixelTracker"	Tag for logging
-debounceTime	100ms	Time to wait before logging visibility changes
-visibilityThreshold	1px	Minimum visible size to trigger logging
-isDebugMode	true	Enable/disable debug logging
+```kotlin
+// Start tracking
+pixelTracker.start()
+// Stop tracking
+pixelTracker.stop()
+// Clean up when done
+pixelTracker.destroy()
+// Set the interval at which the pixel's visibility is checked
+// The default value is 3 seconds
+pixelTracker.setVisibilityCheckInterval(ts) //ts - time in sec
+```
+### Best Practices
+
+```kotlin
+override fun onPause() {
+super.onPause()
+pixelTracker.stop()
+}
+
+override fun onDestroy() {
+super.onDestroy()
+pixelTracker.destroy()
+}
+```
+
+---
+
+## Troubleshooting
+
+### Events not sending
+
+- Ensure INTERNET permission is added
+- Verify `baseUrl` is correct
+
+### No debug logs
+
+- Set `isDebugMode = true`
+
+---
+
+## Support
+
+📧 mediation@veon.com  
+[GitHub Issues](https://github.com/veonadtech/pixel-tracker-android-sdk/issues)

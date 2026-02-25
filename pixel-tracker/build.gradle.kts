@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.pixeltracker"
-    compileSdk = 36
+    compileSdk = 34
 
     defaultConfig {
         minSdk = 19

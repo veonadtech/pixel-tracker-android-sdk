@@ -23,6 +23,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var pixelTracker: PixelHandle
     private var isDescriptionExpanded = false
     private var refreshTimeSeconds: Long = 5L
+    private val visibilityCheckInterval: Long = 3L
     private val debugPixelSize: Int = 40
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -181,7 +182,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        pixelTracker1.setVisibilityCheckInterval(3)
+        pixelTracker.setVisibilityCheckInterval(visibilityCheckInterval)
 
         pixelTracker.start()
 

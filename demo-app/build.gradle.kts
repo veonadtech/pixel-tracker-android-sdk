@@ -5,7 +5,7 @@ plugins {
 
 android {
     namespace = "com.example.pixeltrackerdemo"
-    compileSdk = 36
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.example.pixel_tracker_android_sdk"
