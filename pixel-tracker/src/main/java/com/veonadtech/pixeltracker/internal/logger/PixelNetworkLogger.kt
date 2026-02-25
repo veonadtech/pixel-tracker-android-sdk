@@ -50,6 +50,7 @@ internal class PixelNetworkLogger(
     }
 
     override fun logDisappearance(pixelId: String, timestamp: String) {
+        //  just log to the local logger for debug purposes
         delegateRef.get()?.logDisappearance(pixelId, timestamp)
     }
 
