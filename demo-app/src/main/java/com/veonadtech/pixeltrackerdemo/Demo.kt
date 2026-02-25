@@ -1,8 +1,8 @@
-package com.example.pixeltrackerdemo
+package com.veonadtech.pixeltrackerdemo
 
 import android.app.Application
-import com.example.pixeltracker.BuildConfig
-import com.example.pixeltracker.PixelTracker
+import com.veonadtech.pixeltracker.BuildConfig
+import com.veonadtech.pixeltracker.PixelTracker
 
 class Demo : Application() {
 

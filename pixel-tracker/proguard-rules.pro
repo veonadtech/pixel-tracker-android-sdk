@@ -20,8 +20,8 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
--keep class com.example.pixeltracker.** { *; }
--keep interface com.example.pixeltracker.** { *; }
--keepclassmembers class com.example.pixeltracker.** {
+-keep class com.veonadtech.pixeltracker.** { *; }
+-keep interface com.veonadtech.pixeltracker.** { *; }
+-keepclassmembers class com.veonadtech.pixeltracker.** {
     public *;
 }

@@ -1,4 +1,4 @@
-package com.example.pixeltracker.model
+package com.veonadtech.pixeltracker.model
 
 import com.google.gson.annotations.SerializedName
 

@@ -1,4 +1,4 @@
-package com.example.pixeltracker.api
+package com.veonadtech.pixeltracker.api
 
 /**
  * Provides a handle to control and interact with a pixel tracking instance.
@@ -93,7 +93,7 @@ interface PixelHandle {
      * After calling this method, the handle is no longer valid and should not be used.
      * Any further method calls may result in undefined behavior.
      *
-     * This method is automatically called when the associated [com.example.pixeltracker.internal.tracker.PixelTrackerView]
+     * This method is automatically called when the associated [com.veonadtech.pixeltracker.internal.tracker.PixelTrackerView]
      * is detached from the window, but may be invoked earlier if explicit cleanup
      * is required.
      */

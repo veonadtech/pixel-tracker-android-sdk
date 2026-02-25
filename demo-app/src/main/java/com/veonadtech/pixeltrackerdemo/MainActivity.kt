@@ -1,4 +1,4 @@
-package com.example.pixeltrackerdemo
+package com.veonadtech.pixeltrackerdemo
 
 import android.graphics.Color
 import android.os.Bundle
@@ -10,11 +10,11 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import com.example.pixeltracker.PixelTracker
-import com.example.pixeltracker.api.PixelConfig
-import com.example.pixeltracker.api.PixelEventListener
-import com.example.pixeltracker.api.PixelHandle
-import com.example.pixeltrackerdemo.databinding.ActivityMainBinding
+import com.veonadtech.pixeltracker.PixelTracker
+import com.veonadtech.pixeltracker.api.PixelConfig
+import com.veonadtech.pixeltracker.api.PixelEventListener
+import com.veonadtech.pixeltracker.api.PixelHandle
+import com.veonadtech.pixeltrackerdemo.databinding.ActivityMainBinding
 import androidx.core.graphics.toColorInt
 
 class MainActivity : AppCompatActivity() {

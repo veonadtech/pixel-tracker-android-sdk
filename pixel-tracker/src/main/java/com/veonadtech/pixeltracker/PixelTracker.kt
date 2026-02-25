@@ -1,14 +1,14 @@
-package com.example.pixeltracker
+package com.veonadtech.pixeltracker
 
 import android.content.Context
 import android.util.Log
 import android.view.ViewGroup
-import com.example.pixeltracker.api.PixelConfig
-import com.example.pixeltracker.api.PixelHandle
-import com.example.pixeltracker.internal.logger.DefaultPixelLogger
-import com.example.pixeltracker.internal.logger.PixelNetworkLogger
-import com.example.pixeltracker.internal.tracker.PixelTrackerView
-import com.example.pixeltracker.network.PixelNetworkManager
+import com.veonadtech.pixeltracker.api.PixelConfig
+import com.veonadtech.pixeltracker.api.PixelHandle
+import com.veonadtech.pixeltracker.internal.logger.DefaultPixelLogger
+import com.veonadtech.pixeltracker.internal.logger.PixelNetworkLogger
+import com.veonadtech.pixeltracker.internal.tracker.PixelTrackerView
+import com.veonadtech.pixeltracker.network.PixelNetworkManager
 
 object PixelTracker {
 

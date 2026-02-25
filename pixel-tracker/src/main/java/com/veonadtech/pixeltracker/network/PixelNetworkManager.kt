@@ -1,7 +1,7 @@
-package com.example.pixeltracker.network
+package com.veonadtech.pixeltracker.network
 
 import android.util.Log
-import com.example.pixeltracker.model.PixelEvent
+import com.veonadtech.pixeltracker.model.PixelEvent
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

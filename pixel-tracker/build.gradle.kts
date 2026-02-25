@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.pixeltracker"
+    namespace = "com.veonadtech.pixeltracker"
     compileSdk = 34
 
     defaultConfig {

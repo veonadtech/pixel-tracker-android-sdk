@@ -1,14 +1,14 @@
-package com.example.pixeltracker.internal.tracker
+package com.veonadtech.pixeltracker.internal.tracker
 
 import android.content.Context
 import android.graphics.Rect
 import android.view.View
 import android.view.ViewGroup
-import com.example.pixeltracker.api.PixelConfig
-import com.example.pixeltracker.api.PixelEventListener
-import com.example.pixeltracker.api.PixelHandle
-import com.example.pixeltracker.api.PixelLogger
-import com.example.pixeltracker.api.PixelStats
+import com.veonadtech.pixeltracker.api.PixelConfig
+import com.veonadtech.pixeltracker.api.PixelEventListener
+import com.veonadtech.pixeltracker.api.PixelHandle
+import com.veonadtech.pixeltracker.api.PixelLogger
+import com.veonadtech.pixeltracker.api.PixelStats
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

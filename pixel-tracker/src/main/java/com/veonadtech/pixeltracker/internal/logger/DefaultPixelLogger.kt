@@ -1,8 +1,8 @@
-package com.example.pixeltracker.internal.logger
+package com.veonadtech.pixeltracker.internal.logger
 
 import android.util.Log
-import com.example.pixeltracker.BuildConfig
-import com.example.pixeltracker.api.PixelLogger
+import com.veonadtech.pixeltracker.BuildConfig
+import com.veonadtech.pixeltracker.api.PixelLogger
 
 /**
  * Implementation of PixelLogger that logs events to Android LogCat only in debug mode.

@@ -1,4 +1,4 @@
-package com.example.pixeltracker.api
+package com.veonadtech.pixeltracker.api
 
 import androidx.annotation.ColorInt
 
