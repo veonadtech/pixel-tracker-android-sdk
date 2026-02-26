@@ -14,6 +14,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
@@ -23,6 +24,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.min
 import kotlin.math.pow
 
@@ -36,6 +38,8 @@ internal class PixelNetworkManager(
 
     private companion object {
         const val MAX_RETRIES = 3
+        const val MAX_CONCURRENT_REQUESTS = 4
+        const val TOTAL_TIMEOUT_MS = 10_000L
         const val INITIAL_RETRY_DELAY_MS = 1_000L
         const val MAX_RETRY_DELAY_MS = 8_000L
         const val TIMEOUT_SECONDS = 10L
@@ -57,10 +61,10 @@ internal class PixelNetworkManager(
 
     private val gson = Gson()
 
-    private var processorJob: Job
+    private val processorJobs = mutableListOf<Job>()
 
     init {
-        processorJob = startProcessor()
+        startProcessors()
     }
 
     fun enqueueEvent(event: PixelEvent) {
@@ -70,22 +74,53 @@ internal class PixelNetworkManager(
         }
     }
 
-    private fun startProcessor(): Job {
-        return scope.launch {
-            for (event in eventChannel) {
-                sendEventWithRetry(event)
+    private fun startProcessors() {
+        repeat(MAX_CONCURRENT_REQUESTS) { processorIndex ->
+            processorJobs.add(
+                scope.launch {
+                    try {
+                        for (event in eventChannel) {
+                            processEventWithTimeout(event, processorIndex)
+                        }
+                    } catch (e: CancellationException) {
+                        if (isDebugMode) {
+                            Log.d("PixelNetworkManager", "Processor $processorIndex cancelled")
+                        }
+                        throw e
+                    } catch (t: Throwable) {
+                        if (isDebugMode) {
+                            Log.e("PixelNetworkManager", "Processor $processorIndex failed", t)
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    private suspend fun processEventWithTimeout(event: PixelEvent, processorIndex: Int) {
+        withTimeoutOrNull(TOTAL_TIMEOUT_MS) {
+            sendEventWithRetry(event)
+        } ?: run {
+            if (isDebugMode) {
+                Log.e(
+                    "PixelNetworkManager",
+                    "[Processor $processorIndex] Event timed out after ${TOTAL_TIMEOUT_MS}ms: $event"
+                )
             }
         }
     }
 
     private suspend fun sendEventWithRetry(event: PixelEvent) {
         repeat(MAX_RETRIES) { attempt ->
-
             val success = try {
                 sendEvent(event)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                Log.w("PixelNetworkManager", "Send failed: ${e.message}")
-                false
+                if (isDebugMode) {
+                    Log.w("PixelNetworkManager", "Send failed: ${e.message}")
+                }
+                    false
             }
 
             if (success) return
@@ -94,10 +129,12 @@ internal class PixelNetworkManager(
                 val delayTime = calculateBackoff(attempt)
                 delay(delayTime)
             } else {
-                Log.e(
-                    "PixelNetworkManager",
-                    "Failed after $MAX_RETRIES attempts: $event"
-                )
+                if (isDebugMode) {
+                    Log.e(
+                        "PixelNetworkManager",
+                        "Failed after $MAX_RETRIES attempts: $event"
+                    )
+                }
             }
         }
     }
@@ -182,15 +219,26 @@ internal class PixelNetworkManager(
     }
 
     fun shutdown() {
+        if (isDebugMode) {
+            Log.d("PixelNetworkManager", "Shutting down...")
+        }
         eventChannel.close()
-        processorJob.cancel()
+
+        processorJobs.forEach { it.cancel() }
+        processorJobs.clear()
+
         scope.cancel()
+
         httpClient.dispatcher.executorService.shutdown()
         httpClient.connectionPool.evictAll()
+
+        if (isDebugMode) {
+            Log.d("PixelNetworkManager", "Shutdown complete")
+        }
     }
 
     /**
      * For debug purposes.
      */
-    fun isActive(): Boolean = processorJob.isActive
+    fun isActive(): Boolean = processorJobs.any { it.isActive }
 }
