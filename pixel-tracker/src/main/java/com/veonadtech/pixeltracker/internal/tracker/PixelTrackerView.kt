@@ -77,11 +77,13 @@ internal class PixelTrackerView(
     }
 
     override fun updateRefreshTime(seconds: Long) {
-        refreshTimeMs = max(0, seconds * 1000)
+        require(seconds >= 0) { "Refresh time seconds must be non-negative, got $seconds" }
+        refreshTimeMs = seconds * 1000
     }
 
     override fun setVisibilityCheckInterval(seconds: Long) {
-        visibilityCheckInterval = max(0, seconds * 1000)
+        require(seconds >= 0) { "Visibility check interval seconds must be non-negative, got $seconds" }
+        visibilityCheckInterval = seconds * 1000
     }
 
     override fun setEventListener(listener: PixelEventListener?) {
