@@ -195,15 +195,17 @@ internal class PixelNetworkManager(
         if (isDebugMode) {
             Log.d("PixelNetworkManager", "Shutting down...")
         }
+
         eventChannel.close()
 
         processorJobs.forEach { it.cancel() }
         processorJobs.clear()
 
-        scope.cancel()
-
-        httpClient.dispatcher.executorService.shutdown()
+        httpClient.dispatcher.cancelAll()
+        httpClient.dispatcher.executorService.shutdownNow()
         httpClient.connectionPool.evictAll()
+
+        scope.cancel()
 
         if (isDebugMode) {
             Log.d("PixelNetworkManager", "Shutdown complete")

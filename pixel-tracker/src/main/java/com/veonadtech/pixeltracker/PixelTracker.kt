@@ -53,16 +53,19 @@ object PixelTracker {
         container: ViewGroup,
         config: PixelConfig
     ): PixelHandle {
+        synchronized(lock) {
+            val logger = pixelNetworkLogger
+                ?: throw IllegalStateException("PixelTracker must be initialized before attach(). Call initialize() first.")
 
-        val view = PixelTrackerView(
-            context = context,
-            config = config,
-            logger = pixelNetworkLogger ?: DefaultPixelLogger()
-        )
+            val view = PixelTrackerView(
+                context = context,
+                config = config,
+                logger = logger
+            )
 
-        container.addView(view)
-
-        return view
+            container.addView(view)
+            return view
+        }
     }
 
     fun shutdown() {
