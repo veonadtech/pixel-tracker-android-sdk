@@ -1,8 +1,8 @@
-package com.veonadtech.pixeltracker.model
+package com.veonadtech.pixeltracker.internal.model
 
 import com.google.gson.annotations.SerializedName
 
-data class PixelEvent(
+internal data class PixelEvent(
     @SerializedName("pixel_id")
     val pixelId: String,
 

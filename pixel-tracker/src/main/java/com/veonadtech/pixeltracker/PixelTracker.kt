@@ -8,7 +8,7 @@ import com.veonadtech.pixeltracker.api.PixelHandle
 import com.veonadtech.pixeltracker.internal.logger.DefaultPixelLogger
 import com.veonadtech.pixeltracker.internal.logger.PixelNetworkLogger
 import com.veonadtech.pixeltracker.internal.tracker.PixelTrackerView
-import com.veonadtech.pixeltracker.network.PixelNetworkManager
+import com.veonadtech.pixeltracker.internal.network.PixelNetworkManager
 
 object PixelTracker {
 

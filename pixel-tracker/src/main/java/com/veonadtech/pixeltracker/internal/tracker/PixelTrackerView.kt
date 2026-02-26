@@ -55,11 +55,14 @@ internal class PixelTrackerView(
     init {
         layoutParams = ViewGroup.LayoutParams(config.pixelSize, config.pixelSize)
 
-        if (config.color != null) {
-            setBackgroundColor(config.color)
-        } else {
-            setBackgroundColor(0x00000000)
-        }
+        setBackgroundColor(config.color ?: 0x00000000)
+    }
+
+    // View lifecycle
+
+    override fun onDetachedFromWindow() {
+        super.onDetachedFromWindow()
+        destroy()
     }
 
     // PixelHandle implementation

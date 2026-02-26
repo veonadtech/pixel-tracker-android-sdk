@@ -1,7 +1,7 @@
-package com.veonadtech.pixeltracker.network
+package com.veonadtech.pixeltracker.internal.network
 
 import android.util.Log
-import com.veonadtech.pixeltracker.model.PixelEvent
+import com.veonadtech.pixeltracker.internal.model.PixelEvent
 import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +21,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlin.math.min
 import kotlin.math.pow
@@ -28,7 +29,7 @@ import kotlin.math.pow
 /**
  * Manages the network queue and delivery of pixel events to a remote server.
  */
-class PixelNetworkManager(
+internal class PixelNetworkManager(
     private val baseUrl: String,
     private val isDebugMode: Boolean
 ) {
@@ -132,7 +133,7 @@ class PixelNetworkManager(
 
             call.enqueue(object : Callback {
 
-                override fun onFailure(call: Call, e: java.io.IOException) {
+                override fun onFailure(call: Call, e: IOException) {
                     if (isDebugMode) {
                         Log.e(
                             "PixelNetworkManager",

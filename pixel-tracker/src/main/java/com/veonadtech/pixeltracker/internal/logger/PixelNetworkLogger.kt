@@ -3,8 +3,8 @@ package com.veonadtech.pixeltracker.internal.logger
 import android.util.Log
 import com.veonadtech.pixeltracker.BuildConfig
 import com.veonadtech.pixeltracker.api.PixelLogger
-import com.veonadtech.pixeltracker.model.PixelEvent
-import com.veonadtech.pixeltracker.network.PixelNetworkManager
+import com.veonadtech.pixeltracker.internal.model.PixelEvent
+import com.veonadtech.pixeltracker.internal.network.PixelNetworkManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
