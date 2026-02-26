@@ -125,7 +125,11 @@ internal class PixelTrackerView(
             } catch (e: CancellationException) {
                 throw e
             } catch (t: Throwable) {
-                logger.logError(config.pixelId,"Visibility loop error: ${t.message}", System.currentTimeMillis().toString())
+                logger.logError(
+                    config.pixelId,
+                    "Visibility loop error: ${t.message}",
+                    System.currentTimeMillis().toString()
+                )
             }
         }
     }

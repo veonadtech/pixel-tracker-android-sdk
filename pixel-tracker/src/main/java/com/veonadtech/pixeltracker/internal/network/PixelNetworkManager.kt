@@ -121,6 +121,7 @@ internal class PixelNetworkManager(
                     }
                     return
                 }
+
                 SendResult.RETRYABLE_ERROR -> {
                     if (attempt < MAX_RETRIES - 1) {
                         delay(calculateBackoff(attempt))
@@ -134,52 +135,53 @@ internal class PixelNetworkManager(
         }
     }
 
-    private suspend fun sendEvent(json: String): SendResult = suspendCancellableCoroutine { continuation ->
+    private suspend fun sendEvent(json: String): SendResult =
+        suspendCancellableCoroutine { continuation ->
 
-        if (isDebugMode) {
-            Log.d("PixelNetworkManager", "Sending event to $baseUrl")
-            Log.d("PixelNetworkManager", "Payload: $json")
-        }
-
-        val request = Request.Builder()
-            .url(baseUrl)
-            .post(json.toRequestBody("application/json".toMediaType()))
-            .build()
-
-        val call = httpClient.newCall(request)
-
-        continuation.invokeOnCancellation {
             if (isDebugMode) {
-                Log.d("PixelNetworkManager", "Request cancelled")
+                Log.d("PixelNetworkManager", "Sending event to $baseUrl")
+                Log.d("PixelNetworkManager", "Payload: $json")
             }
-            call.cancel()
-        }
 
-        call.enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                if (continuation.isActive) {
-                    continuation.resumeWith(Result.success(SendResult.RETRYABLE_ERROR))
+            val request = Request.Builder()
+                .url(baseUrl)
+                .post(json.toRequestBody("application/json".toMediaType()))
+                .build()
+
+            val call = httpClient.newCall(request)
+
+            continuation.invokeOnCancellation {
+                if (isDebugMode) {
+                    Log.d("PixelNetworkManager", "Request cancelled")
                 }
+                call.cancel()
             }
 
-            override fun onResponse(call: Call, response: Response) {
-                response.use {
-                    if (isDebugMode) {
-                        Log.d("PixelNetworkManager", "Response code: ${response.code}")
-                    }
-
-                    val result = when {
-                        response.isSuccessful -> SendResult.SUCCESS
-                        response.code in 500..599 -> SendResult.RETRYABLE_ERROR
-                        else -> SendResult.NON_RETRYABLE_ERROR
-                    }
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
                     if (continuation.isActive) {
-                        continuation.resumeWith(Result.success(result))
+                        continuation.resumeWith(Result.success(SendResult.RETRYABLE_ERROR))
                     }
                 }
-            }
-        })
-    }
+
+                override fun onResponse(call: Call, response: Response) {
+                    response.use {
+                        if (isDebugMode) {
+                            Log.d("PixelNetworkManager", "Response code: ${response.code}")
+                        }
+
+                        val result = when {
+                            response.isSuccessful -> SendResult.SUCCESS
+                            response.code in 500..599 -> SendResult.RETRYABLE_ERROR
+                            else -> SendResult.NON_RETRYABLE_ERROR
+                        }
+                        if (continuation.isActive) {
+                            continuation.resumeWith(Result.success(result))
+                        }
+                    }
+                }
+            })
+        }
 
     /**
      * Exponential backoff: 1s → 2s → 4s (with cap)
