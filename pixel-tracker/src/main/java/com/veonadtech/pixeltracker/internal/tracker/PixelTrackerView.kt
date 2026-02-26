@@ -73,7 +73,7 @@ internal class PixelTrackerView(
     override fun stop() {
         isTracking = false
         visibilityLoopJob?.cancel()
-        refreshJob?.cancel()
+        handleDisappearance()
     }
 
     override fun updateRefreshTime(seconds: Long) {
@@ -131,17 +131,25 @@ internal class PixelTrackerView(
         val visible = isPixelVisible()
 
         if (visible && !wasVisible) {
-            totalAppearances.incrementAndGet()
-            wasVisible = true
-            scheduleRefresh()
-            notifyAppearance()
+            handleAppearance()
         }
 
         if (!visible && wasVisible) {
-            wasVisible = false
-            refreshJob?.cancel()
-            notifyDisappearance()
+            handleDisappearance()
         }
+    }
+
+    private fun handleAppearance() {
+        totalAppearances.incrementAndGet()
+        wasVisible = true
+        scheduleRefresh()
+        notifyAppearance()
+    }
+
+    private fun handleDisappearance() {
+        wasVisible = false
+        refreshJob?.cancel()
+        notifyDisappearance()
     }
 
     private fun scheduleRefresh() {
