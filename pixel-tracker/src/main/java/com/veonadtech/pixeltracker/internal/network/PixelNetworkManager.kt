@@ -99,7 +99,8 @@ internal class PixelNetworkManager(
 
     private suspend fun processEventWithTimeout(event: PixelEvent, processorIndex: Int) {
         withTimeoutOrNull(TOTAL_TIMEOUT_MS) {
-            sendEventWithRetry(event)
+            val json = gson.toJson(event)
+            sendEventWithRetry(event, json)
         } ?: run {
             if (isDebugMode) {
                 Log.e(
@@ -110,48 +111,40 @@ internal class PixelNetworkManager(
         }
     }
 
-    private suspend fun sendEventWithRetry(event: PixelEvent) {
+    private suspend fun sendEventWithRetry(event: PixelEvent, json: String) {
         repeat(MAX_RETRIES) { attempt ->
-            val success = try {
-                sendEvent(event)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                if (isDebugMode) {
-                    Log.w("PixelNetworkManager", "Send failed: ${e.message}")
+
+            when (sendEvent(json)) {
+                SendResult.SUCCESS -> return
+                SendResult.NON_RETRYABLE_ERROR -> {
+                    if (isDebugMode) {
+                        Log.w("PixelNetworkManager", "Non-retryable error: $event")
+                    }
+                    return
                 }
-                    false
-            }
-
-            if (success) return
-
-            if (attempt < MAX_RETRIES - 1) {
-                val delayTime = calculateBackoff(attempt)
-                delay(delayTime)
-            } else {
-                if (isDebugMode) {
-                    Log.e(
-                        "PixelNetworkManager",
-                        "Failed after $MAX_RETRIES attempts: $event"
-                    )
+                SendResult.RETRYABLE_ERROR -> {
+                    if (attempt < MAX_RETRIES - 1) {
+                        delay(calculateBackoff(attempt))
+                    } else {
+                        if (isDebugMode) {
+                            Log.e("PixelNetworkManager", "Failed after retries: $event")
+                        }
+                    }
                 }
             }
         }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend fun sendEvent(event: PixelEvent): Boolean {
-
-        val json = gson.toJson(event)
-        val url = "$baseUrl/track"
+    private suspend fun sendEvent(json: String): SendResult {
 
         if (isDebugMode) {
-            Log.d("PixelNetworkManager", "Sending event to $url")
+            Log.d("PixelNetworkManager", "Sending event to $baseUrl")
             Log.d("PixelNetworkManager", "Payload: $json")
         }
 
         val request = Request.Builder()
-            .url(url)
+            .url(baseUrl)
             .post(
                 json.toRequestBody("application/json".toMediaType())
             )
@@ -171,39 +164,20 @@ internal class PixelNetworkManager(
             call.enqueue(object : Callback {
 
                 override fun onFailure(call: Call, e: IOException) {
-                    if (isDebugMode) {
-                        Log.e(
-                            "PixelNetworkManager",
-                            "Network failure: ${e.message}",
-                            e
-                        )
-                    }
-
-                    if (!continuation.isCompleted) {
-                        continuation.resume(false) {}
-                    }
+                    continuation.resume(SendResult.RETRYABLE_ERROR) {}
                 }
 
                 override fun onResponse(call: Call, response: Response) {
                     response.use {
-
                         if (isDebugMode) {
-                            Log.d(
-                                "PixelNetworkManager",
-                                "Response code: ${response.code}"
-                            )
-
-                            if (!response.isSuccessful) {
-                                Log.w(
-                                    "PixelNetworkManager",
-                                    "Request failed. HTTP ${response.code}"
-                                )
-                            }
+                            Log.d("PixelNetworkManager", "Response code: ${response.code}")
                         }
-
-                        if (!continuation.isCompleted) {
-                            continuation.resume(response.isSuccessful) {}
+                            val result = when {
+                            response.isSuccessful -> SendResult.SUCCESS
+                            response.code in 500..599 -> SendResult.RETRYABLE_ERROR
+                            else -> SendResult.NON_RETRYABLE_ERROR
                         }
+                        continuation.resume(result) {}
                     }
                 }
             })
@@ -241,4 +215,10 @@ internal class PixelNetworkManager(
      * For debug purposes.
      */
     fun isActive(): Boolean = processorJobs.any { it.isActive }
+}
+
+private enum class SendResult {
+    SUCCESS,
+    RETRYABLE_ERROR,
+    NON_RETRYABLE_ERROR
 }
