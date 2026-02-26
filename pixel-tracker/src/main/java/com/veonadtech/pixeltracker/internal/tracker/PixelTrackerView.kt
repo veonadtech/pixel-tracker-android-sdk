@@ -16,6 +16,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 
 @Suppress("ViewConstructor")
@@ -29,14 +30,24 @@ internal class PixelTrackerView(
 
     private var listener: PixelEventListener? = null
 
+    @Volatile
     private var isTracking = false
-    private var wasVisible = false
-    private var totalAppearances = 0
-    private var nextRefreshTime = 0L
-    private var visibilityCheckInterval: Long = 3000L
-    private var refreshJob: Job? = null
 
+    @Volatile
+    private var wasVisible = false
+
+    private var totalAppearances = AtomicInteger(0)
+
+    @Volatile
+    private var nextRefreshTime = 0L
+
+    @Volatile
     private var refreshTimeMs = config.refreshTimeSeconds * 1000
+
+    @Volatile
+    private var visibilityCheckInterval: Long = 3000L
+
+    private var refreshJob: Job? = null
 
     init {
         layoutParams = ViewGroup.LayoutParams(config.pixelSize, config.pixelSize)
@@ -108,7 +119,7 @@ internal class PixelTrackerView(
         val visible = isPixelVisible()
 
         if (visible && !wasVisible) {
-            totalAppearances++
+            totalAppearances.incrementAndGet()
             wasVisible = true
             scheduleRefresh()
             notifyAppearance()
@@ -130,7 +141,7 @@ internal class PixelTrackerView(
         refreshJob = scope.launch {
             delay(refreshTimeMs)
             if (isPixelVisible()) {
-                totalAppearances++
+                totalAppearances.incrementAndGet()
                 notifyRefresh()
                 scheduleRefresh()
             }

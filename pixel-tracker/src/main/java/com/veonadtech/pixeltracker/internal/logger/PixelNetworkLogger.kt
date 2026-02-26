@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.coroutines.cancellation.CancellationException
 
 internal class PixelNetworkLogger(
     private val networkManager: PixelNetworkManager
@@ -73,6 +74,8 @@ internal class PixelNetworkLogger(
 
                 networkManager.enqueueEvent(event)
 
+            } catch (e: CancellationException) {
+                throw e
             } catch (t: Throwable) {
                 val delegate = delegateRef.get()
                 if (delegate is DefaultPixelLogger && delegate.isDebugMode) {

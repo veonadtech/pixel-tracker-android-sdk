@@ -225,7 +225,7 @@ class MainActivity : AppCompatActivity() {
             val stats = pixelTracker.getStats()
 
             binding.showCountText.text =
-                getString(R.string.total_appearances, stats.totalAppearances)
+                getString(R.string.total_appearances, stats.totalAppearances.get())
 
             when {
                 stats.isCurrentlyVisible && stats.refreshEnabled && stats.nextRefreshInMs > 0 -> {
