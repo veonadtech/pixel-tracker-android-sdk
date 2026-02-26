@@ -17,6 +17,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.max
 
 @Suppress("ViewConstructor")
@@ -49,6 +50,8 @@ internal class PixelTrackerView(
 
     private var refreshJob: Job? = null
 
+    private var visibilityLoopJob: Job? = null
+
     init {
         layoutParams = ViewGroup.LayoutParams(config.pixelSize, config.pixelSize)
 
@@ -64,11 +67,12 @@ internal class PixelTrackerView(
     override fun start() {
         if (isTracking) return
         isTracking = true
-        checkVisibilityLoop()
+        visibilityLoopJob = checkVisibilityLoop()
     }
 
     override fun stop() {
         isTracking = false
+        visibilityLoopJob?.cancel()
         refreshJob?.cancel()
     }
 
@@ -106,11 +110,17 @@ internal class PixelTrackerView(
 
     // Visibility logic
 
-    private fun checkVisibilityLoop() {
-        scope.launch {
-            while (isTracking) {
-                delay(visibilityCheckInterval)
-                handleVisibility()
+    private fun checkVisibilityLoop(): Job {
+        return scope.launch {
+            try {
+                while (isTracking) {
+                    delay(visibilityCheckInterval)
+                    handleVisibility()
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (t: Throwable) {
+                logger.logError(config.pixelId,"Visibility loop error: ${t.message}", System.currentTimeMillis().toString())
             }
         }
     }
