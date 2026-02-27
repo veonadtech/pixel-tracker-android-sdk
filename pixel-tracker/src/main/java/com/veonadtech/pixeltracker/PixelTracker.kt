@@ -7,13 +7,13 @@ import com.veonadtech.pixeltracker.api.PixelConfig
 import com.veonadtech.pixeltracker.api.PixelHandle
 import com.veonadtech.pixeltracker.internal.logger.DefaultPixelLogger
 import com.veonadtech.pixeltracker.internal.logger.PixelNetworkLogger
-import com.veonadtech.pixeltracker.internal.tracker.PixelTrackerView
 import com.veonadtech.pixeltracker.internal.network.PixelNetworkManager
+import com.veonadtech.pixeltracker.internal.tracker.PixelTrackerView
+import java.util.Collections
 
 object PixelTracker {
 
     private const val TAG = "PixelTracker"
-
 
     private val lock = Any()
 
@@ -23,14 +23,12 @@ object PixelTracker {
     @Volatile
     private var pixelNetworkLogger: PixelNetworkLogger? = null
 
-    @Volatile
-    private var isDebugMode: Boolean = false
+    private val activeViews =
+        Collections.synchronizedSet(mutableSetOf<PixelTrackerView>())
 
     fun initialize(baseUrl: String, isDebugMode: Boolean = false) {
         synchronized(lock) {
             if (networkManager != null) return
-
-            this.isDebugMode = isDebugMode
 
             val manager = PixelNetworkManager(baseUrl, isDebugMode)
             pixelNetworkLogger = PixelNetworkLogger(manager).apply {
@@ -60,18 +58,27 @@ object PixelTracker {
             val view = PixelTrackerView(
                 context = context,
                 config = config,
-                logger = logger
+                logger = logger,
+                onDestroyed = { destroyedView ->
+                    activeViews.remove(destroyedView)
+                }
             )
 
             container.addView(view)
+            activeViews.add(view)
+
             return view
         }
     }
 
     fun shutdown() {
         synchronized(lock) {
+            activeViews.toList().forEach { it.shutdown() }
+            activeViews.clear()
+
             networkManager?.shutdown()
             networkManager = null
+
             pixelNetworkLogger?.shutdown()
             pixelNetworkLogger = null
 
