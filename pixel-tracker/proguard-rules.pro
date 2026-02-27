@@ -20,8 +20,49 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
--keep class com.veonadtech.pixeltracker.** { *; }
--keep interface com.veonadtech.pixeltracker.** { *; }
--keepclassmembers class com.veonadtech.pixeltracker.** {
-    public *;
+# PixelTracker public API
+-keep class com.veonadtech.pixeltracker.PixelTracker {
+    *;
 }
+
+# Public data classes
+-keep class com.veonadtech.pixeltracker.api.PixelConfig {
+    *;
+}
+
+-keep class com.veonadtech.pixeltracker.api.PixelStats {
+    *;
+}
+
+-keep class com.veonadtech.pixeltracker.api.PixelEventListener {
+    *;
+}
+
+-keep interface com.veonadtech.pixeltracker.api.PixelHandle {
+    *;
+}
+
+-keep interface com.veonadtech.pixeltracker.api.PixelLogger {
+    *;
+}
+
+# GSON MODEL CLASSES
+
+-keep class com.veonadtech.pixeltracker.internal.model.PixelEvent {
+    *;
+}
+
+# GSON ANNOTATIONS
+
+-keepattributes *Annotation*, Signature, Exception
+-keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
+
+# enums
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# for debug
+# -keepattributes SourceFile,LineNumberTable
+# -renamesourcefileattribute SourceFile
