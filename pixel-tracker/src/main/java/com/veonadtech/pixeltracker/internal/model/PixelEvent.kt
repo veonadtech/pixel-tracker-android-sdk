@@ -9,7 +9,7 @@ internal data class PixelEvent(
     @SerializedName("event_type")
     val eventType: EventType,
 
-    @SerializedName("timestamp")
+    @SerializedName("timestamp_ms")
     val timestamp: Long,
 
     @SerializedName("sdk_version")

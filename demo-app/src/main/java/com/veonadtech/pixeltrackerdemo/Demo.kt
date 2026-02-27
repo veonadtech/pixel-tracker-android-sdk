@@ -8,6 +8,6 @@ class Demo : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        PixelTracker.initialize("https://your-server.com/api", true)
+        PixelTracker.initialize("http://185.203.239.197:9111/v1/pixel-event/index", true)
     }
 }
