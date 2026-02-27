@@ -1,7 +1,6 @@
 package com.veonadtech.pixeltracker.internal.network
 
 import android.util.Log
-import com.google.gson.Gson
 import com.veonadtech.pixeltracker.internal.model.PixelEvent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,10 +15,9 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Call
 import okhttp3.Callback
-import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.io.IOException
 import java.util.concurrent.TimeUnit
@@ -57,8 +55,6 @@ internal class PixelNetworkManager(
         .readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .build()
-
-    private val gson = Gson()
 
     private val processorJobs = mutableListOf<Job>()
 
@@ -98,8 +94,7 @@ internal class PixelNetworkManager(
 
     private suspend fun processEventWithTimeout(event: PixelEvent, processorIndex: Int) {
         withTimeoutOrNull(TOTAL_TIMEOUT_MS) {
-            val json = gson.toJson(event)
-            sendEventWithRetry(event, json)
+            sendEventWithRetry(event)
         } ?: run {
             if (isDebugMode) {
                 Log.e(
@@ -110,10 +105,9 @@ internal class PixelNetworkManager(
         }
     }
 
-    private suspend fun sendEventWithRetry(event: PixelEvent, json: String) {
+    private suspend fun sendEventWithRetry(event: PixelEvent) {
         repeat(MAX_RETRIES) { attempt ->
-
-            when (sendEvent(json)) {
+            when (sendEvent(event)) {
                 SendResult.SUCCESS -> return
                 SendResult.NON_RETRYABLE_ERROR -> {
                     if (isDebugMode) {
@@ -135,17 +129,25 @@ internal class PixelNetworkManager(
         }
     }
 
-    private suspend fun sendEvent(json: String): SendResult =
+    private suspend fun sendEvent(event: PixelEvent): SendResult =
         suspendCancellableCoroutine { continuation ->
-
             if (isDebugMode) {
-                Log.d("PixelNetworkManager", "Sending event to $baseUrl")
-                Log.d("PixelNetworkManager", "Payload: $json")
+                Log.d("PixelNetworkManager", "Sending event to $baseUrl/index")
+                Log.d("PixelNetworkManager", "Event: pixelId=${event.pixelId}, type=${event.eventType}, timestamp=${event.timestamp}")
             }
 
+            val body = MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("event_type", event.eventType.name.lowercase())
+                .addFormDataPart("pixel_id", event.pixelId)
+                .addFormDataPart("timestamp_ms", event.timestamp.toString())
+                .addFormDataPart("sdk_version", event.sdkVersion)
+                .addFormDataPart("error_message", event.errorMessage ?: "")
+                .build()
+
             val request = Request.Builder()
-                .url(baseUrl)
-                .post(json.toRequestBody("application/json".toMediaType()))
+                .url("$baseUrl/index")
+                .post(body)
                 .build()
 
             val call = httpClient.newCall(request)
@@ -159,6 +161,9 @@ internal class PixelNetworkManager(
 
             call.enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
+                    if (isDebugMode) {
+                        Log.e("PixelNetworkManager", "Network error: ${e.message}")
+                    }
                     if (continuation.isActive) {
                         continuation.resumeWith(Result.success(SendResult.RETRYABLE_ERROR))
                     }
@@ -166,8 +171,11 @@ internal class PixelNetworkManager(
 
                 override fun onResponse(call: Call, response: Response) {
                     response.use {
+                        val responseBody = response.body?.string()
+
                         if (isDebugMode) {
                             Log.d("PixelNetworkManager", "Response code: ${response.code}")
+                            Log.d("PixelNetworkManager", "Response body: $responseBody")
                         }
 
                         val result = when {
