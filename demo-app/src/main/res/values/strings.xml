@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">Pixel Tracker Demo</string>
+    <string name="how_it_works">How it works:</string>
+    <string name="scroll_instruction">1. Scroll down 1.5 screens to see the red pixel</string>
+    <string name="refresh_instruction">2. Keep pixel on screen for %d seconds to count another view</string>
+    <string name="refresh_disabled">2. Refresh disabled - pixel counts only on appearance</string>
+    <string name="restart_instruction">3. Scroll up to hide pixel, then down again to restart counting</string>
+    <string name="pixel_size_info">Pixel size: %dx%dpx (debug mode)</string>
+    <string name="description_template">
+        How it works:\n
+        1. Scroll down 1.5 screens to see the pixel\n
+        %s\n
+        3. Scroll up to hide pixel, then down again to restart counting\n
+        %s
+    </string>
+    <string name="visible">✅ VISIBLE</string>
+    <string name="hidden">❌ HIDDEN</string>
+    <string name="new_view">NEW VIEW</string>
+    <string name="tracking">TRACKING</string>
+    <string name="total_appearances">Total Appearances: %d</string>
+    <string name="next_view_in">Next view in: %ds</string>
+    <string name="refresh_seconds">Refresh: %ds</string>
+    <string name="refresh_off">Refresh: Off</string>
+    <string name="scroll_hint">Scroll down to find the red pixel</string>
+    <string name="pixel_visible">🎯 Pixel is visible</string>
+    <string name="pixel_visible_refresh">🎯 Pixel is visible (refresh every %ds)</string>
+    <string name="pixel_hidden">👻 Pixel hidden</string>
+    <string name="pixel_refresh">🔄 New view counted (refresh)</string>
+</resources>

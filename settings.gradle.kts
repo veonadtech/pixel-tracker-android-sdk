@@ -16,9 +16,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        maven { url = uri("https://jitpack.io") }
     }
 }
 
 rootProject.name = "pixel-tracker-android-sdk"
-include(":app")
- 
+include(":demo-app")
+include(":pixel-tracker")
