@@ -3,6 +3,7 @@ package com.veonadtech.pixeltracker
 import android.content.Context
 import android.util.Log
 import android.view.ViewGroup
+import androidx.annotation.MainThread
 import com.veonadtech.pixeltracker.api.PixelConfig
 import com.veonadtech.pixeltracker.api.PixelHandle
 import com.veonadtech.pixeltracker.internal.logger.DefaultPixelLogger
@@ -26,9 +27,25 @@ object PixelTracker {
     private val activeViews =
         Collections.synchronizedSet(mutableSetOf<PixelTrackerView>())
 
+    @MainThread
+    fun isInitialized(): Boolean {
+        synchronized(lock) {
+            return networkManager != null && pixelNetworkLogger != null
+        }
+    }
+
+    @MainThread
     fun initialize(baseUrl: String, isDebugMode: Boolean = false) {
         synchronized(lock) {
-            if (networkManager != null) return
+
+            if (networkManager != null) {
+                Log.w(TAG, "Pixel Tracker SDK already initialized")
+                return
+            }
+
+            if (baseUrl.isBlank()) {
+                throw IllegalArgumentException("BaseUrl cannot be empty when initializing Pixel Tracker SDK")
+            }
 
             val manager = PixelNetworkManager(baseUrl, isDebugMode)
             pixelNetworkLogger = PixelNetworkLogger(manager).apply {
@@ -52,8 +69,12 @@ object PixelTracker {
         config: PixelConfig
     ): PixelHandle {
         synchronized(lock) {
+            if (!isInitialized()) {
+                throw IllegalStateException("PixelTracker must be initialized before attach(). Call initialize() first.")
+            }
+
             val logger = pixelNetworkLogger
-                ?: throw IllegalStateException("PixelTracker must be initialized before attach(). Call initialize() first.")
+                ?: throw IllegalStateException("PixelTracker logger not available even after initialization")
 
             val view = PixelTrackerView(
                 context = context,
