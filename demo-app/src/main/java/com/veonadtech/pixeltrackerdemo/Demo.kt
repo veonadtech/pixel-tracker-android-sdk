@@ -2,6 +2,7 @@ package com.veonadtech.pixeltrackerdemo
 
 import android.app.Application
 import android.util.Log
+import com.veonadtech.pixeltracker.InitStatus
 import com.veonadtech.pixeltracker.PixelTracker
 
 class Demo : Application() {
@@ -15,23 +16,14 @@ class Demo : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        try {
-
-            PixelTracker.initialize(
-                BASEURL,
-                ISDEBUGMODE
-            )
-
-            Log.d(TAG, "Pixel tracker SDK initialized with URL: $BASEURL, debugMode: $ISDEBUGMODE")
-
-        } catch (e: IllegalArgumentException) {
-
-            Log.e(TAG, "Invalid config: ${e.message}")
-
-        } catch (e: Exception) {
-
-            Log.e(TAG, "Unexpected error: ${e.message}")
-
+        PixelTracker.initialize(BASEURL, ISDEBUGMODE) { status ->
+            when (status) {
+                is InitStatus.Success ->
+                    Log.d(TAG, "Pixel tracker SDK initialized with URL: $BASEURL, debugMode: $ISDEBUGMODE")
+                is InitStatus.Failure -> {
+                    Log.e(TAG, "${status.reason}: ${status.exception.message}", status.exception)
+                }
+            }
         }
     }
 }

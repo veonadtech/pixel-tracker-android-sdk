@@ -35,29 +35,38 @@ object PixelTracker {
     }
 
     @MainThread
-    fun initialize(baseUrl: String, isDebugMode: Boolean = false) {
+    fun initialize(
+        baseUrl: String,
+        isDebugMode: Boolean = false,
+        callback: ((InitStatus) -> Unit)? = null
+    ) {
         synchronized(lock) {
-
             if (networkManager != null) {
-                Log.w(TAG, "Pixel Tracker SDK already initialized")
+                callback?.invoke(InitStatus.Success("SDK already initialized"))
                 return
             }
 
             if (baseUrl.isBlank()) {
-                throw IllegalArgumentException("BaseUrl cannot be empty when initializing Pixel Tracker SDK")
+                val exception = IllegalArgumentException("BaseUrl cannot be empty")
+                callback?.invoke(InitStatus.Failure(exception, "Invalid configuration"))
+                return
             }
 
-            val manager = PixelNetworkManager(baseUrl, isDebugMode)
-            pixelNetworkLogger = PixelNetworkLogger(manager).apply {
-                setDelegate(
-                    DefaultPixelLogger().apply {
-                        this.isDebugMode = isDebugMode
-                    }
-                )
+            try {
+                val manager = PixelNetworkManager(baseUrl, isDebugMode)
+                pixelNetworkLogger = PixelNetworkLogger(manager).apply {
+                    setDelegate(
+                        DefaultPixelLogger().apply {
+                            this.isDebugMode = isDebugMode
+                        }
+                    )
+                }
+                networkManager = manager
+
+                callback?.invoke(InitStatus.Success())
+            } catch (e: Exception) {
+                callback?.invoke(InitStatus.Failure(e, "Initialization failed"))
             }
-
-            networkManager = manager
-
         }
     }
 
@@ -65,28 +74,42 @@ object PixelTracker {
         context: Context,
         container: ViewGroup,
         config: PixelConfig
-    ): PixelHandle {
+    ): PixelHandle? {
         synchronized(lock) {
             if (!isInitialized()) {
-                throw IllegalStateException("PixelTracker must be initialized before attach(). Call initialize() first.")
+                Log.e(TAG, "PixelTracker must be initialized before attach(). Call initialize() first.")
+
+                return null
             }
 
             val logger = pixelNetworkLogger
-                ?: throw IllegalStateException("PixelTracker logger not available even after initialization")
+            if (logger == null) {
+                Log.e(TAG, "PixelTracker logger not available even after initialization")
 
-            val view = PixelTrackerView(
-                context = context,
-                config = config,
-                logger = logger,
-                onDestroyed = { destroyedView ->
-                    activeViews.remove(destroyedView)
-                }
-            )
+                return null
+            }
 
-            container.addView(view)
-            activeViews.add(view)
+            try {
+                val view = PixelTrackerView(
+                    context = context,
+                    config = config,
+                    logger = logger,
+                    onDestroyed = { destroyedView ->
+                        activeViews.remove(destroyedView)
+                    }
+                )
 
-            return view
+                container.addView(view)
+                activeViews.add(view)
+                Log.d(TAG, "PixelTrackerView attached successfully. Active views: ${activeViews.size}")
+
+                return view
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to create or attach PixelTrackerView: ${e.message}", e)
+
+                return null
+            }
         }
     }
 
@@ -104,4 +127,11 @@ object PixelTracker {
             Log.d(TAG, "Pixel tracker SDK shutdown")
         }
     }
+}
+
+sealed class InitStatus {
+
+    data class Success(val message: String = "SDK initialized") : InitStatus()
+    data class Failure(val exception: Exception, val reason: String) : InitStatus()
+
 }

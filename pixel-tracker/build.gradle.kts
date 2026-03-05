@@ -10,7 +10,11 @@ android {
 
     defaultConfig {
         minSdk = 19
-        buildConfigField("String", "LIBRARY_VERSION", "\"0.1.0\"")
+        buildConfigField(
+            "String",
+            "LIBRARY_VERSION",
+            "\"${libs.versions.pixel.tracker.get()}\""
+        )
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
