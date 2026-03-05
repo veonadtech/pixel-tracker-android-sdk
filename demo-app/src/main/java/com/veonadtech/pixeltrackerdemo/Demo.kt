@@ -9,7 +9,7 @@ class Demo : Application() {
 
     companion object {
         private const val TAG = "PixelTracker"
-        private const val BASEURL = "https://api-pixel-tracker.veonadtech.com/v1/pixel-event"
+        private const val BASEURL = "Enter your base URL here"
         private const val ISDEBUGMODE = true
     }
 

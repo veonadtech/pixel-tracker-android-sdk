@@ -1,5 +1,9 @@
 # CHANGELOG
 
+# 0.2.1
+## Fixed
+* The base URL is not hardcoded in the demo app anymore
+
 # 0.2.0
 ## Changed
 * SDK Initialization changed
