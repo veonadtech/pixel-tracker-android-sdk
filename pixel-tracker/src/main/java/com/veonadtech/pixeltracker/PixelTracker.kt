@@ -58,8 +58,6 @@ object PixelTracker {
 
             networkManager = manager
 
-            Log.d(TAG, "Pixel tracker SDK initialized with URL: $baseUrl, debugMode: $isDebugMode")
-
         }
     }
 

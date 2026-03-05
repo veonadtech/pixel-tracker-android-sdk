@@ -6,23 +6,31 @@ import com.veonadtech.pixeltracker.PixelTracker
 
 class Demo : Application() {
 
+    companion object {
+        private const val TAG = "PixelTracker"
+        private const val BASEURL = "https://api-pixel-tracker.veonadtech.com/v1/pixel-event"
+        private const val ISDEBUGMODE = true
+    }
+
     override fun onCreate() {
         super.onCreate()
 
         try {
 
             PixelTracker.initialize(
-                "https://api-pixel-tracker.veonadtech.com/v1/pixel-event",
-                true
+                BASEURL,
+                ISDEBUGMODE
             )
+
+            Log.d(TAG, "Pixel tracker SDK initialized with URL: $BASEURL, debugMode: $ISDEBUGMODE")
 
         } catch (e: IllegalArgumentException) {
 
-            Log.e("PixelTracker", "Invalid config: ${e.message}")
+            Log.e(TAG, "Invalid config: ${e.message}")
 
         } catch (e: Exception) {
 
-            Log.e("PixelTracker", "Unexpected error: ${e.message}")
+            Log.e(TAG, "Unexpected error: ${e.message}")
 
         }
     }
