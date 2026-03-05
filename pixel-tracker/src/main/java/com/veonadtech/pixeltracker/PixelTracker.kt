@@ -3,6 +3,7 @@ package com.veonadtech.pixeltracker
 import android.content.Context
 import android.util.Log
 import android.view.ViewGroup
+import androidx.annotation.MainThread
 import com.veonadtech.pixeltracker.api.PixelConfig
 import com.veonadtech.pixeltracker.api.PixelHandle
 import com.veonadtech.pixeltracker.internal.logger.DefaultPixelLogger
@@ -26,23 +27,46 @@ object PixelTracker {
     private val activeViews =
         Collections.synchronizedSet(mutableSetOf<PixelTrackerView>())
 
-    fun initialize(baseUrl: String, isDebugMode: Boolean = false) {
+    @MainThread
+    fun isInitialized(): Boolean {
         synchronized(lock) {
-            if (networkManager != null) return
+            return networkManager != null && pixelNetworkLogger != null
+        }
+    }
 
-            val manager = PixelNetworkManager(baseUrl, isDebugMode)
-            pixelNetworkLogger = PixelNetworkLogger(manager).apply {
-                setDelegate(
-                    DefaultPixelLogger().apply {
-                        this.isDebugMode = isDebugMode
-                    }
-                )
+    @MainThread
+    fun initialize(
+        baseUrl: String,
+        isDebugMode: Boolean = false,
+        callback: ((InitStatus) -> Unit)? = null
+    ) {
+        synchronized(lock) {
+            if (networkManager != null) {
+                callback?.invoke(InitStatus.Success("SDK already initialized"))
+                return
             }
 
-            networkManager = manager
+            if (baseUrl.isBlank()) {
+                val exception = IllegalArgumentException("BaseUrl cannot be empty")
+                callback?.invoke(InitStatus.Failure(exception, "Invalid configuration"))
+                return
+            }
 
-            Log.d(TAG, "Pixel tracker SDK initialized with URL: $baseUrl, debugMode: $isDebugMode")
+            try {
+                val manager = PixelNetworkManager(baseUrl, isDebugMode)
+                pixelNetworkLogger = PixelNetworkLogger(manager).apply {
+                    setDelegate(
+                        DefaultPixelLogger().apply {
+                            this.isDebugMode = isDebugMode
+                        }
+                    )
+                }
+                networkManager = manager
 
+                callback?.invoke(InitStatus.Success())
+            } catch (e: Exception) {
+                callback?.invoke(InitStatus.Failure(e, "Initialization failed"))
+            }
         }
     }
 
@@ -50,24 +74,42 @@ object PixelTracker {
         context: Context,
         container: ViewGroup,
         config: PixelConfig
-    ): PixelHandle {
+    ): PixelHandle? {
         synchronized(lock) {
+            if (!isInitialized()) {
+                Log.e(TAG, "PixelTracker must be initialized before attach(). Call initialize() first.")
+
+                return null
+            }
+
             val logger = pixelNetworkLogger
-                ?: throw IllegalStateException("PixelTracker must be initialized before attach(). Call initialize() first.")
+            if (logger == null) {
+                Log.e(TAG, "PixelTracker logger not available even after initialization")
 
-            val view = PixelTrackerView(
-                context = context,
-                config = config,
-                logger = logger,
-                onDestroyed = { destroyedView ->
-                    activeViews.remove(destroyedView)
-                }
-            )
+                return null
+            }
 
-            container.addView(view)
-            activeViews.add(view)
+            try {
+                val view = PixelTrackerView(
+                    context = context,
+                    config = config,
+                    logger = logger,
+                    onDestroyed = { destroyedView ->
+                        activeViews.remove(destroyedView)
+                    }
+                )
 
-            return view
+                container.addView(view)
+                activeViews.add(view)
+                Log.d(TAG, "PixelTrackerView attached successfully. Active views: ${activeViews.size}")
+
+                return view
+
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to create or attach PixelTrackerView: ${e.message}", e)
+
+                return null
+            }
         }
     }
 
@@ -85,4 +127,11 @@ object PixelTracker {
             Log.d(TAG, "Pixel tracker SDK shutdown")
         }
     }
+}
+
+sealed class InitStatus {
+
+    data class Success(val message: String = "SDK initialized") : InitStatus()
+    data class Failure(val exception: Exception, val reason: String) : InitStatus()
+
 }

@@ -20,7 +20,7 @@ import androidx.core.graphics.toColorInt
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var pixelTracker: PixelHandle
+    private var pixelTrackerItem: PixelHandle? = null
     private var isDescriptionExpanded = false
     private var refreshTimeSeconds: Long = 5L
     private val visibilityCheckInterval: Long = 3L
@@ -103,13 +103,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updatePixelTrackerRefreshTime() {
-        if (::pixelTracker.isInitialized) {
-            pixelTracker.updateRefreshTime(refreshTimeSeconds)
-            Log.d("PixelTrackerDemo", "Refresh time updated to ${refreshTimeSeconds}s")
-        }
+        pixelTrackerItem?.updateRefreshTime(refreshTimeSeconds)
+        Log.d("PixelTrackerDemo", "Refresh time updated to ${refreshTimeSeconds}s")
     }
 
     private fun setupPixelTracker() {
+        if (!PixelTracker.isInitialized()) return
 
         val pixelTrackerContainer = FrameLayout(this)
 
@@ -125,7 +124,7 @@ class MainActivity : AppCompatActivity() {
 
         binding.imagesContainer.addView(pixelTrackerContainer, layoutParams)
 
-        pixelTracker = PixelTracker.attach(
+        pixelTrackerItem = PixelTracker.attach(
             context = this,
             container = pixelTrackerContainer,
             config = PixelConfig(
@@ -137,7 +136,7 @@ class MainActivity : AppCompatActivity() {
             )
         )
 
-        pixelTracker.setEventListener(object : PixelEventListener {
+        pixelTrackerItem?.setEventListener(object : PixelEventListener {
 
             override fun onAppearance(pixelId: String, timestamp: String) {
                 runOnUiThread {
@@ -182,9 +181,9 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        pixelTracker.setVisibilityCheckInterval(visibilityCheckInterval)
+        pixelTrackerItem?.setVisibilityCheckInterval(visibilityCheckInterval)
 
-        pixelTracker.start()
+        pixelTrackerItem?.start()
 
         binding.pixelStatusText.text = getString(R.string.tracking)
         binding.pixelStatusText.setTextColor(ContextCompat.getColor(this@MainActivity,android.R.color.holo_orange_dark))
@@ -221,22 +220,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateShowCount() {
-        if (::pixelTracker.isInitialized) {
-            val stats = pixelTracker.getStats()
+        pixelTrackerItem?.let { handle ->
+            val stats = handle.getStats()
 
             binding.showCountText.text =
                 getString(R.string.total_appearances, stats.totalAppearances.get())
 
-            when {
+            binding.hintTextView.text = when {
                 stats.isCurrentlyVisible && stats.refreshEnabled && stats.nextRefreshInMs > 0 -> {
                     val secondsToNext = stats.nextRefreshInMs / 1000 + 1
-                    binding.hintTextView.text = getString(R.string.next_view_in, secondsToNext)
+                    getString(R.string.next_view_in, secondsToNext)
                 }
                 stats.refreshEnabled -> {
-                    binding.hintTextView.text = getString(R.string.refresh_seconds, refreshTimeSeconds)
+                    getString(R.string.refresh_seconds, refreshTimeSeconds)
                 }
                 else -> {
-                    binding.hintTextView.text = getString(R.string.refresh_off)
+                    getString(R.string.refresh_off)
                 }
             }
         }
@@ -244,23 +243,17 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (::pixelTracker.isInitialized) {
-            pixelTracker.start()
-            updateShowCount()
-        }
+        pixelTrackerItem?.start()
+        updateShowCount()
     }
 
     override fun onPause() {
         super.onPause()
-        if (::pixelTracker.isInitialized) {
-            pixelTracker.stop()
-        }
+        pixelTrackerItem?.stop()
     }
 
     override fun onDestroy() {
-        if (::pixelTracker.isInitialized) {
-            pixelTracker.destroy()
-        }
+        pixelTrackerItem?.destroy()
         super.onDestroy()
     }
 }
