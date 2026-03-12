@@ -78,15 +78,26 @@ dependencies {
 Initialize once at app startup
 
 ```kotlin
-class MyApp : Application() {
+class Demo : Application() {
+
+    companion object {
+        private const val TAG = "PixelTracker"
+        private const val BASEURL = "Enter your base URL here"
+        private const val ISDEBUGMODE = true
+    }
 
     override fun onCreate() {
         super.onCreate()
 
-        PixelTracker.initialize(
-            baseUrl = "PIXEL_SERVER_URI",
-            isDebugMode = false
-        )
+        PixelTracker.initialize(BASEURL, ISDEBUGMODE) { status ->
+            when (status) {
+                is InitStatus.Success ->
+                    Log.d(TAG, "Pixel tracker SDK initialized with URL: $BASEURL, debugMode: $ISDEBUGMODE")
+                is InitStatus.Failure -> {
+                    Log.e(TAG, "${status.reason}: ${status.exception.message}", status.exception)
+                }
+            }
+        }
     }
 }
 ```
@@ -200,5 +211,4 @@ pixelTracker.destroy()
 
 ## Support
 
-📧 mediation@veon.com  
 [GitHub Issues](https://github.com/veonadtech/pixel-tracker-android-sdk/issues)
