@@ -26,14 +26,15 @@ class InitStatusTest {
     }
 
     @Test
-    fun `Success is instance of InitStatus`() {
-        assertTrue(InitStatus.Success() is InitStatus)
+    fun `Success is a subtype of InitStatus`() {
+        val s: InitStatus = InitStatus.Success()
+        assertNotNull(s)
     }
 
     @Test
-    fun `Failure is instance of InitStatus`() {
-        val f = InitStatus.Failure(Exception("x"), "reason")
-        assertTrue(f is InitStatus)
+    fun `Failure is a subtype of InitStatus`() {
+        val f: InitStatus = InitStatus.Failure(Exception("x"), "reason")
+        assertNotNull(f)
     }
 
     @Test

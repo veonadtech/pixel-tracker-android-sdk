@@ -73,12 +73,18 @@ class PixelNetworkManagerTest {
     }
 
     @Test
-    fun `enqueueEvent after shutdown does not throw (drops silently)`() {
+    fun `enqueueEvent after shutdown does not crash the caller`() {
         manager.shutdown()
+        // Channel is closed; trySend returns a failure result but must NOT propagate an exception
+        // to the caller. Any result other than an exception is acceptable.
         try {
             manager.enqueueEvent(event())
-        } catch (e: Throwable) {
-            fail("enqueueEvent() after shutdown should not throw: ${e.message}")
+            // if we reach here – fine, it silently dropped
+        } catch (e: Exception) {
+            // ClosedSendChannelException is internal to kotlinx.coroutines;
+            // the public contract should not surface it. Fail explicitly so the
+            // SDK team knows to add a try-catch in enqueueEvent().
+            fail("enqueueEvent() after shutdown must not throw, but got ${e::class.simpleName}: ${e.message}")
         }
     }
 

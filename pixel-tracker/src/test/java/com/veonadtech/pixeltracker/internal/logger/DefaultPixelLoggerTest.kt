@@ -3,7 +3,13 @@ package com.veonadtech.pixeltracker.internal.logger
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+// android.util.Log is called in debug mode → needs Robolectric to stub it
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [21])
 class DefaultPixelLoggerTest {
 
     private lateinit var logger: DefaultPixelLogger

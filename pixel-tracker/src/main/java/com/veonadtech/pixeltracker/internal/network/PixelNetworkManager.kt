@@ -63,9 +63,13 @@ internal class PixelNetworkManager(
     }
 
     fun enqueueEvent(event: PixelEvent) {
-        val result = eventChannel.trySend(event)
-        if (result.isFailure) {
-            Log.w("PixelNetworkManager", "Event dropped due to full buffer: $event")
+        try {
+            val result = eventChannel.trySend(event)
+            if (result.isFailure && isDebugMode) {
+                Log.w("PixelNetworkManager", "Event dropped (buffer full or channel closed): $event")
+            }
+        } catch (_: Exception) {
+            // Channel already closed after shutdown – drop silently
         }
     }
 
