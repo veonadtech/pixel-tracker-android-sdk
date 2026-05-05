@@ -1,5 +1,5 @@
 [versions]
-agp = "8.1.2"
+agp = "8.13.2"
 core = "1.5.0"
 espressoCore = "3.7.0"
 gson = "2.11.0"
