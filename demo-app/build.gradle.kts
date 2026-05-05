@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.veonadtech.pixeltrackerdemo"
-    compileSdk = 36
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.veonadtech.pixel_tracker_android_sdk"
         minSdk = 21
-        targetSdk = 36
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
