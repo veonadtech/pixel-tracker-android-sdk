@@ -1,7 +1,5 @@
 package com.veonadtech.pixeltracker.internal.network
 
-import com.veonadtech.pixeltracker.InitStatus
-import com.veonadtech.pixeltracker.PixelTracker
 import com.veonadtech.pixeltracker.internal.logger.DefaultPixelLogger
 import com.veonadtech.pixeltracker.internal.logger.PixelNetworkLogger
 import com.veonadtech.pixeltracker.internal.model.PixelEvent
@@ -36,7 +34,7 @@ class RealServerLoadTest {
             if (shouldRun) {
                 println("✅ Load tests will run with baseUrl: $baseUrl")
             } else {
-                println("⏭️  Load tests SKIPPED. Use -DbaseUrl=URL or -PbaseUrl=URL or export BASE_URL=URL")
+                println("⏭️  Load tests SKIPPED. Export BASE_URL=URL")
             }
         }
     }
