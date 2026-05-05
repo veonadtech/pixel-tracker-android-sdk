@@ -9,7 +9,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        minSdk = 19
+        minSdk = 21
         buildConfigField(
             "String",
             "LIBRARY_VERSION",
@@ -22,6 +22,9 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+            all { test ->
+                test.systemProperty("baseUrl", project.findProperty("baseUrl") ?: "")
+            }
         }
     }
 
@@ -56,20 +59,20 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.gson)
 
-    // Unit test
-    testImplementation("junit:junit:4.13.2")
-    testImplementation("org.robolectric:robolectric:4.11.1")
-    testImplementation("androidx.test:core:1.5.0")
-    testImplementation("androidx.test:runner:1.5.2")
-    testImplementation("androidx.test:rules:1.5.0")
-    testImplementation("org.mockito:mockito-core:5.7.0")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
+    // Unit tests
+    testImplementation(libs.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.core)
+    testImplementation(libs.androidx.runner)
+    testImplementation(libs.androidx.rules)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.kotlin)
 
-    // Instrumented (on-device / emulator) test stack
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
-    androidTestImplementation("androidx.test:runner:1.5.2")
-    androidTestImplementation("androidx.test:rules:1.5.0")
+    // Instrumented tests
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.runner.v152)
+    androidTestImplementation(libs.androidx.rules.v150)
 }
 
 publishing {
