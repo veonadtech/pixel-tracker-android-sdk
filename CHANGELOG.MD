@@ -1,6 +1,6 @@
 # CHANGELOG
 
-# 0.2.2
+# 0.3.0
 ## Changed
 * Android API 21
 * Kotlin 1.9
