@@ -1,5 +1,15 @@
 # CHANGELOG
 
+# 0.2.2
+## Changed
+* Android API 21
+* Kotlin 1.9
+* Gradle 8.14.4
+
+## Added
+* Unit tests and load tests for the SDK
+* CI pipeline for the SDK
+
 # 0.2.1
 ## Fixed
 * The base URL is not hardcoded in the demo app anymore
