@@ -35,9 +35,9 @@ Pixel Tracker SDK provides:
 
 ## Requirements
 
-- Android API 19+
-- Kotlin 1.8+
-- Gradle 8.3+
+- Android API 21+
+- Kotlin 1.9+
+- Gradle 8.14+
 
 ---
 
