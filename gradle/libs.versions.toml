@@ -1,24 +1,44 @@
 [versions]
-agp = "8.1.2"
+agp = "8.13.2"
+core = "1.5.0"
+espressoCore = "3.7.0"
 gson = "2.11.0"
-kotlin = "1.8.0"
+junit = "4.13.2"
+junitVersion = "1.3.0"
+kotlin = "1.9.0"
 coreKtx = "1.9.0"
 material = "1.6.1"
 activity = "1.7.2"
 constraintlayout = "2.1.4"
 kotlinx-coroutines = "1.7.3"
+mockitoCore = "5.7.0"
+mockitoKotlin = "5.2.1"
 okhttp = "4.12.0"
 pixel-tracker = "0.2.1"
+robolectric = "4.11.1"
+rules = "1.5.0"
+runner = "1.5.2"
 
 [libraries]
+androidx-core = { module = "androidx.test:core", version.ref = "core" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espressoCore" }
+androidx-junit = { module = "androidx.test.ext:junit", version.ref = "junitVersion" }
+androidx-rules = { module = "androidx.test:rules", version.ref = "core" }
+androidx-rules-v150 = { module = "androidx.test:rules", version.ref = "rules" }
+androidx-runner = { module = "androidx.test:runner", version.ref = "core" }
+androidx-runner-v152 = { module = "androidx.test:runner", version.ref = "runner" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+junit = { module = "junit:junit", version.ref = "junit" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinx-coroutines" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoCore" }
+mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 pixel-tracker-android = { module = "com.github.veonadtech:pixel-tracker-android-sdk", version.ref = "pixel-tracker" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

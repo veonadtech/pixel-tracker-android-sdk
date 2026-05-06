@@ -196,6 +196,48 @@ pixelTracker.destroy()
 
 ---
 
+## Testing
+
+The SDK includes both unit tests and optional load tests that verify integration with a real server.
+
+### Running Unit Tests
+
+Unit tests validate the internal logic and do not require a network connection.
+
+```bash
+# Run all unit tests
+./gradlew :pixel-tracker:test
+
+# Run unit tests with detailed output
+./gradlew :pixel-tracker:test --info
+```
+
+---
+
+## Running Load Tests (Optional)
+Load tests send real events to a server and require a valid endpoint URL.
+These tests are skipped automatically if no URL is provided.
+
+```bash
+# Run all load tests
+./gradlew :pixel-tracker:testDebugUnitTest \
+--tests "*.RealServerLoadTest.*" \
+-DbaseUrl=https://your-server.com/v1/pixel-event
+
+# Run a specific load test
+./gradlew :pixel-tracker:testDebugUnitTest \
+--tests "*.RealServerLoadTest.500 concurrent events from 10 threads" \
+-DbaseUrl=https://your-server.com/v1/pixel-event
+
+# Run with verbose output
+./gradlew :pixel-tracker:testDebugUnitTest \
+--tests "*.RealServerLoadTest.*" \
+-DbaseUrl=https://your-server.com/v1/pixel-event \
+--info
+```
+
+---
+
 ## Troubleshooting
 
 ### Events not sending
